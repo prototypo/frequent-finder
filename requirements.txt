@@ -1,0 +1,2 @@
+PySide6
+QTCreator 14.0.2
