@@ -116,6 +116,8 @@ struct ProjectEditor: View {
     @FocusState private var nameFocused: Bool
     @State private var newURL = ""
     @State private var newLabel = ""
+    /// Result of the last "Find Repositories", e.g. "Added 4 repositories."
+    @State private var findResult: String?
     /// Index of the link being edited; nil = adding a new one.
     @State private var editing: Int?
 
@@ -144,6 +146,24 @@ struct ProjectEditor: View {
                     }
                 }
                 Button("Add Files or Folders…", action: addFiles)
+            }
+            Section("Git Repositories") {
+                ForEach(project.repos, id: \.self) { repo in
+                    HStack {
+                        Text(project.displayName(of: repo))
+                            .help((project.fullPath(of: repo) as NSString).abbreviatingWithTildeInPath)
+                        Spacer()
+                        iconButton("minus.circle", "Remove \(repo)") {
+                            model.update { try $0.removeRepos(project.name, [repo], cwd: "/") }
+                        }
+                    }
+                }
+                HStack {
+                    Button("Add Repositories…", action: addRepos)
+                    Button("Find Repositories", action: findRepos)
+                        .help("Adds every git repository up to 3 folder levels below the project.")
+                    if let findResult { Text(findResult).foregroundStyle(.secondary) }
+                }
             }
             Section("Links") {
                 ForEach(Array(project.urls.enumerated()), id: \.offset) { i, link in
@@ -189,6 +209,26 @@ struct ProjectEditor: View {
         panel.prompt = "Choose"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         model.update { try $0.setPath(project.name, to: url.path, cwd: "/") }
+    }
+
+    private func addRepos() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = true
+        panel.directoryURL = URL(fileURLWithPath: project.path)
+        panel.message = "Choose git repository folders. ⌘-click to choose several."
+        panel.prompt = "Add"
+        guard panel.runModal() == .OK else { return }
+        model.update { try $0.addRepos(project.name, panel.urls.map(\.path), cwd: "/") }
+    }
+
+    private func findRepos() {
+        var added = 0
+        model.update { added = try $0.findRepos(project.name) }
+        if model.error == nil {
+            findResult = added == 0 ? "No new repositories found." : "Added \(added) \(added == 1 ? "repository" : "repositories")."
+        }
     }
 
     private func addFiles() {

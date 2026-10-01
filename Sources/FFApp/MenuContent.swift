@@ -15,7 +15,7 @@ struct MenuContent: View {
         } else {
             ForEach(model.config.projects, id: \.name) { project in
                 if FileManager.default.fileExists(atPath: project.path) {
-                    let status = model.git[project.path]
+                    let status = model.combinedGit(project)
                     Button {
                         openWindow(value: project.name)
                         bringToFront(title: project.name)

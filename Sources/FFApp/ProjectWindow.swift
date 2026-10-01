@@ -38,6 +38,11 @@ struct ProjectWindow: View {
                     ForEach(p.keyFiles, id: \.self) { KeyFileRow(project: p, file: $0) }
                 }
             }
+            if !p.repos.isEmpty {
+                Section("Git Repositories") {
+                    ForEach(p.repos, id: \.self) { RepoRow(project: p, repo: $0) }
+                }
+            }
             if !p.urls.isEmpty {
                 Section("Links") {
                     ForEach(p.urls, id: \.url) { link in
@@ -107,5 +112,38 @@ struct KeyFileIcon: View {
             .foregroundStyle(.secondary)
             .frame(width: 16)
             .accessibilityLabel(folder ? "Folder" : "File")
+    }
+}
+
+/// One repository: status, name, branch, and buttons to open it in Finder or the terminal.
+struct RepoRow: View {
+    let project: Project
+    let repo: String
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let full = project.fullPath(of: repo)
+        let exists = FileManager.default.fileExists(atPath: full)
+        let status = model.git[full]
+        HStack {
+            Image(systemName: GitSymbol.name(for: status))
+                .foregroundStyle(GitSymbol.color(for: status))
+                .accessibilityHidden(true)
+            Text(project.displayName(of: repo))
+                .help((full as NSString).abbreviatingWithTildeInPath)
+            if let status { Text(status.branch).foregroundStyle(.secondary) }
+            Spacer()
+            Text(exists ? GitSymbol.description(for: status) : "folder not found").foregroundStyle(.secondary)
+            Button { model.attempt { try Launcher.open(full) } } label: { Image(systemName: "folder") }
+                .help("Open in Finder")
+                .accessibilityLabel("Open \(repo) in Finder")
+            Button { model.attempt { try Launcher.openTerminal(at: full, app: model.config.terminal) } } label: {
+                Image(systemName: "terminal")
+            }
+            .help("Open in \(model.config.terminal.displayName)")
+            .accessibilityLabel("Open \(repo) in \(model.config.terminal.displayName)")
+        }
+        .buttonStyle(.borderless)
+        .disabled(!exists)
     }
 }

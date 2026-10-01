@@ -7,6 +7,8 @@ A macOS menu bar utility to keep track of current projects and their files.
   ↓N to pull (as of the last `git fetch`).
 - Click a project to open its window: open the folder in Finder, open Terminal or
   iTerm there, see the branch, open key files and links.
+- A project can list git repositories (for a folder holding many repos). Each shows its own
+  status; the menu sums them up. Settings → Find Repositories adds all repos up to 3 levels down.
 - Settings… (⌘,) edits projects, the terminal choice, Show in menu bar, and Open at login.
   If you hide the menu bar icon, open the app again from Finder or Spotlight to bring it back.
 - The `ff` command does the same from the command line.
@@ -32,6 +34,9 @@ ff rename <name> <new-name>
 ff set-path <name> <path>
 ff file add <name> <file>...
 ff file remove <name> <file>...
+ff repo add <name> <path>...
+ff repo remove <name> <path>...
+ff repo find <name>
 ff url add <name> <url> [--label "Label"]
 ff url remove <name> <url>
 ff terminal [terminal|iterm]
@@ -51,6 +56,7 @@ The app reloads it when it changes.
       "keyFiles" : [ "README.md" ],
       "name" : "Frequent Finder",
       "path" : "/Users/me/code/frequent-finder",
+      "repos" : [ ],
       "urls" : [ { "label" : "GitHub", "url" : "https://github.com/me/frequent-finder" } ]
     }
   ],
@@ -58,7 +64,7 @@ The app reloads it when it changes.
 }
 ```
 
-`keyFiles` are files or folders: relative to `path` when inside the project, else absolute (shown as `(external)/<name>`). `label` is optional. `terminal` is `terminal` or `iterm`.
+`keyFiles` are files or folders: relative to `path` when inside the project, else absolute (shown as `(external)/<name>`). `repos` are stored the same way. `label` is optional. `terminal` is `terminal` or `iterm`.
 
 ## Development
 

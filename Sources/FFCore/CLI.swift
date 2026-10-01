@@ -10,6 +10,9 @@ public enum CLI {
       ff set-path <name> <path>
       ff file add <name> <file>...          add key files or folders (any location)
       ff file remove <name> <file>...
+      ff repo add <name> <path>...          add git repositories with their own status
+      ff repo remove <name> <path>...
+      ff repo find <name>                   add every repository up to 3 levels below the project
       ff url add <name> <url> [--label "Label"]
       ff url remove <name> <url>
       ff terminal [terminal|iterm]          show or set the terminal app
@@ -60,6 +63,22 @@ public enum CLI {
             switch a[0] {
             case "add": try config.addFiles(a[1], files, cwd: cwd)
             case "remove": try config.removeFiles(a[1], files, cwd: cwd)
+            default: throw FFError.usage(usage)
+            }
+        case "repo":
+            try expect(a.count >= 2)
+            let paths = Array(a.dropFirst(2))
+            switch a[0] {
+            case "add":
+                try expect(!paths.isEmpty)
+                try config.addRepos(a[1], paths, cwd: cwd)
+            case "remove":
+                try expect(!paths.isEmpty)
+                try config.removeRepos(a[1], paths, cwd: cwd)
+            case "find":
+                try expect(paths.isEmpty)
+                let added = try config.findRepos(a[1])
+                output = "Added \(added) \(added == 1 ? "repository" : "repositories")."
             default: throw FFError.usage(usage)
             }
         case "url":

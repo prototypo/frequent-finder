@@ -150,3 +150,35 @@ private func fixture() throws -> String {
     #expect(p.displayName(of: "/Users/me/Documents/Accounting2026") == "(external)/Accounting2026")
     #expect(p.displayName(of: "/Users/me/Documents/Accounting2026/") == "(external)/Accounting2026")
 }
+
+/// Makes each path (relative to `root`) a fake git repo: a folder with a `.git` folder inside.
+private func makeRepos(_ root: String, _ paths: [String]) throws {
+    for p in paths {
+        try FileManager.default.createDirectory(atPath: root + "/" + p + "/.git", withIntermediateDirectories: true)
+    }
+}
+
+@Test func reposAddedRejectedAndRemoved() throws {
+    let dir = try fixture()
+    try makeRepos(dir, ["proj/a", "ext"])
+    var c = Config()
+    try c.add(path: "proj", cwd: dir)
+    try c.addRepos("proj", ["proj/a", "ext"], cwd: dir)
+    try c.addRepos("proj", [dir + "/proj/a"], cwd: "/")              // same repo again: ignored
+    #expect(c.projects[0].repos == ["a", dir + "/ext"])
+    #expect(throws: FFError.notARepository(dir + "/proj/docs")) { try c.addRepos("proj", ["proj/docs"], cwd: dir) }
+    #expect(throws: FFError.notARepository(dir + "/nope")) { try c.addRepos("proj", ["nope"], cwd: dir) }
+    try c.removeRepos("proj", ["a", dir + "/ext"], cwd: "/")
+    #expect(c.projects[0].repos.isEmpty)
+    #expect(throws: FFError.notInList("a")) { try c.removeRepos("proj", ["a"], cwd: dir + "/proj") }
+}
+
+@Test func findReposSearchesThreeLevelsSkippingHiddenAndNested() throws {
+    let dir = try fixture()
+    try makeRepos(dir + "/proj", ["a", "group/b", "group/b/nested", "l1/l2/l3", "l1/l2/l3x/l4", ".hidden/c"])
+    var c = Config()
+    try c.add(path: "proj", cwd: dir)
+    #expect(try c.findRepos("proj") == 3)
+    #expect(c.projects[0].repos == ["a", "group/b", "l1/l2/l3"])
+    #expect(try c.findRepos("proj") == 0)                              // nothing new the second time
+}

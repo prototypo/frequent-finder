@@ -48,3 +48,10 @@ import Testing
     #expect(git(["-C", dir + "/clone", "commit", "-q", "--allow-empty", "-m", "two"]) == 0)
     #expect(Git.status(at: dir + "/clone") == GitStatus(branch: "main", changes: 0, ahead: 1, behind: 0))
 }
+
+@Test func combinedStatusSumsAndIsDirtyIfAnyIs() {
+    #expect(GitStatus.combine([nil, nil]) == nil)
+    let c = GitStatus.combine([nil, GitStatus(branch: "main", changes: 0, ahead: 1), GitStatus(branch: "dev", changes: 2, behind: 1)])
+    #expect(c?.changes == 2 && c?.ahead == 1 && c?.behind == 1 && c?.isDirty == true)
+    #expect(GitStatus.combine([GitStatus(branch: "main", changes: 0)])?.isDirty == false)
+}

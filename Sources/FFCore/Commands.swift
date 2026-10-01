@@ -85,23 +85,54 @@ extension Config {
     }
 
     public mutating func addFiles(_ name: String, _ files: [String], cwd: String) throws {
-        let i = try index(of: name)
-        for file in files {
-            let full = Self.absolutePath(file, cwd: cwd)
+        try addItems(\.keyFiles, name, files, cwd: cwd) { full in
             guard FileManager.default.fileExists(atPath: full) else { throw FFError.fileNotFound(full) }
-            let key = try keyFilePath(of: file, in: name, cwd: cwd)
-            if !projects[i].keyFiles.contains(key) { projects[i].keyFiles.append(key) }
         }
     }
 
     /// Each file may be the stored path, or a path (absolute or relative to `cwd`) to the item.
     public mutating func removeFiles(_ name: String, _ files: [String], cwd: String) throws {
+        try removeItems(\.keyFiles, name, files, cwd: cwd)
+    }
+
+    public mutating func addRepos(_ name: String, _ paths: [String], cwd: String) throws {
+        try addItems(\.repos, name, paths, cwd: cwd) { full in
+            guard Git.isRepository(at: full) else { throw FFError.notARepository(full) }
+        }
+    }
+
+    public mutating func removeRepos(_ name: String, _ paths: [String], cwd: String) throws {
+        try removeItems(\.repos, name, paths, cwd: cwd)
+    }
+
+    /// Adds every repository found under the project folder. Returns how many were new.
+    @discardableResult
+    public mutating func findRepos(_ name: String) throws -> Int {
         let i = try index(of: name)
-        for file in files {
-            var key = file
-            if !projects[i].keyFiles.contains(file) { key = try keyFilePath(of: file, in: name, cwd: cwd) }
-            guard let j = projects[i].keyFiles.firstIndex(of: key) else { throw FFError.notInList(key) }
-            projects[i].keyFiles.remove(at: j)
+        let before = projects[i].repos.count
+        try addRepos(name, Git.findRepositories(under: projects[i].path), cwd: "/")
+        return projects[i].repos.count - before
+    }
+
+    /// Adds paths to a project's list after `check` accepts each one's full path. Duplicates are ignored.
+    private mutating func addItems(_ list: WritableKeyPath<Project, [String]>, _ name: String, _ paths: [String],
+                                   cwd: String, check: (String) throws -> Void) throws {
+        let i = try index(of: name)
+        for path in paths {
+            try check(Self.absolutePath(path, cwd: cwd))
+            let key = try keyFilePath(of: path, in: name, cwd: cwd)
+            if !projects[i][keyPath: list].contains(key) { projects[i][keyPath: list].append(key) }
+        }
+    }
+
+    private mutating func removeItems(_ list: WritableKeyPath<Project, [String]>, _ name: String, _ paths: [String],
+                                      cwd: String) throws {
+        let i = try index(of: name)
+        for path in paths {
+            var key = path
+            if !projects[i][keyPath: list].contains(path) { key = try keyFilePath(of: path, in: name, cwd: cwd) }
+            guard let j = projects[i][keyPath: list].firstIndex(of: key) else { throw FFError.notInList(key) }
+            projects[i][keyPath: list].remove(at: j)
         }
     }
 

@@ -58,6 +58,10 @@ scripts/make-app.sh
 - `name`: unique, compared case-insensitively. Used by the CLI to pick a project.
 - `path`: absolute path. `~` is expanded on input, stored expanded.
 - `keyFiles`: files or folders. Stored relative to `path` when inside it, else as an absolute path.
+- `repos`: git repositories shown with their own status; stored like `keyFiles`. A repo is a folder
+  containing `.git`. "Find Repositories" / `ff repo find` adds all repos up to 3 levels below the
+  project (skipping hidden folders and folders inside a found repo). The menu sums up the project
+  folder and its repos: dirty if any is dirty, ↑/↓ added up.
 - `urls[].label`: optional. If missing, the URL itself is shown.
 - Project order = array order.
 - Missing file on first run = empty config. The directory is created on first save.

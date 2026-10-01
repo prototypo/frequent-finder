@@ -39,6 +39,11 @@ final class AppModel {
         refreshAllGit()
     }
 
+    /// The project folder and all its repos summed up, for the menu.
+    func combinedGit(_ p: Project) -> GitStatus? {
+        GitStatus.combine([git[p.path]] + p.repos.map { git[p.fullPath(of: $0)] })
+    }
+
     func project(named name: String) -> Project? {
         (try? config.index(of: name)).map { config.projects[$0] }
     }
@@ -67,7 +72,7 @@ final class AppModel {
     }
 
     func refreshAllGit() {
-        refreshGit(config.projects.map(\.path))
+        refreshGit(config.projects.flatMap { p in [p.path] + p.repos.map(p.fullPath(of:)) })
     }
 
     func refreshGit(_ paths: [String]) {

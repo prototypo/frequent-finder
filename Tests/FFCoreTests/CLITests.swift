@@ -77,3 +77,17 @@ private struct Env {
     try env.ff("remove", "q")
     #expect(try env.store.load().projects.isEmpty)
 }
+
+@Test func repoCommands() throws {
+    let env = try Env()
+    for p in ["one/.git", "two/.git"] {
+        try FileManager.default.createDirectory(atPath: env.dir + "/" + p, withIntermediateDirectories: true)
+    }
+    try env.ff("add", ".", "--name", "P")
+    #expect(try env.ff("repo", "find", "P") == "Added 2 repositories.")
+    try env.ff("repo", "remove", "P", "one")
+    #expect(try env.store.load().projects[0].repos == ["two"])
+    try env.ff("repo", "add", "P", "one")
+    #expect(try env.store.load().projects[0].repos == ["two", "one"])
+    #expect(throws: FFError.usage(CLI.usage)) { try env.ff("repo", "add", "P") }
+}

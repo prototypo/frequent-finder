@@ -38,20 +38,23 @@ public struct Project: Codable, Hashable, Sendable {
     /// Files and folders: relative to `path` when inside the project, else absolute.
     public var keyFiles: [String]
     public var urls: [ProjectURL]
+    /// Git repositories shown with their own status. Stored like `keyFiles`.
+    public var repos: [String]
 
-    public init(name: String, path: String, keyFiles: [String] = [], urls: [ProjectURL] = []) {
+    public init(name: String, path: String, keyFiles: [String] = [], urls: [ProjectURL] = [], repos: [String] = []) {
         self.name = name
         self.path = path
         self.keyFiles = keyFiles
         self.urls = urls
+        self.repos = repos
     }
 
-    /// The full path of a stored key file.
+    /// The full path of a stored key file or repo.
     public func fullPath(of keyFile: String) -> String {
         keyFile.hasPrefix("/") ? keyFile : (path as NSString).appendingPathComponent(keyFile)
     }
 
-    /// Short text for a key file: the stored path inside the project, `(external)/<name>` outside it.
+    /// Short text for a key file or repo: the stored path inside the project, `(external)/<name>` outside it.
     public func displayName(of keyFile: String) -> String {
         keyFile.hasPrefix("/") ? "(external)/" + (keyFile as NSString).lastPathComponent : keyFile
     }
@@ -62,6 +65,7 @@ public struct Project: Codable, Hashable, Sendable {
         path = try c.decode(String.self, forKey: .path)
         keyFiles = try c.decodeIfPresent([String].self, forKey: .keyFiles) ?? []
         urls = try c.decodeIfPresent([ProjectURL].self, forKey: .urls) ?? []
+        repos = try c.decodeIfPresent([String].self, forKey: .repos) ?? []
     }
 }
 
