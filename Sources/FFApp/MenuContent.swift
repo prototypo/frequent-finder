@@ -31,6 +31,9 @@ struct MenuContent: View {
         }
         Divider()
         Button("Open All Projects") {
+            // Become a regular (Dock) app before activating: switching while already active leaves
+            // the menu bar unchanged. The window also does this, for when it reopens at launch.
+            NSApp.setActivationPolicy(.regular)
             openWindow(id: "all")
             bringToFront { $0 === model.allProjectsWindow }
         }
