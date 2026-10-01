@@ -35,7 +35,7 @@ struct ProjectWindow: View {
             }
             if !p.keyFiles.isEmpty {
                 Section("Key Files and Folders") {
-                    ForEach(p.keyFiles, id: \.self) { KeyFileRow(root: p.path, file: $0) }
+                    ForEach(p.keyFiles, id: \.self) { KeyFileRow(project: p, file: $0) }
                 }
             }
             if !p.urls.isEmpty {
@@ -73,16 +73,16 @@ struct GitLine: View {
 }
 
 struct KeyFileRow: View {
-    let root: String
+    let project: Project
     let file: String
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        let full = (root as NSString).appendingPathComponent(file)
+        let full = project.fullPath(of: file)
         let exists = FileManager.default.fileExists(atPath: full)
         HStack {
             KeyFileIcon(path: full)
-            Button(file) { model.attempt { try Launcher.open(full) } }
+            Button((file as NSString).abbreviatingWithTildeInPath) { model.attempt { try Launcher.open(full) } }
                 .buttonStyle(.link)
                 .disabled(!exists)
             Spacer()

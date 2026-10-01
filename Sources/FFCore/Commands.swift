@@ -71,16 +71,17 @@ extension Config {
         projects.insert(projects.remove(at: i), at: d > i ? d - 1 : d)
     }
 
-    /// `file` relative to the project's folder. Tries the paths as given first, then with
-    /// symlinks resolved (file pickers may return `/private/var/...` for `/var/...`).
-    public func relativePath(of file: String, in name: String, cwd: String) throws -> String {
+    /// How `file` is stored: relative to the project folder when inside it, else absolute.
+    /// Tries the paths as given first, then with symlinks resolved (file pickers may
+    /// return `/private/var/...` for `/var/...`).
+    public func keyFilePath(of file: String, in name: String, cwd: String) throws -> String {
         let root = projects[try index(of: name)].path
         let full = Self.absolutePath(file, cwd: cwd)
         let resolve = { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }
         for (r, f) in [(root, full), (resolve(root), resolve(full))] where f.hasPrefix(r + "/") {
             return String(f.dropFirst(r.count + 1))
         }
-        throw FFError.fileOutsideProject(full)
+        return full
     }
 
     public mutating func addFiles(_ name: String, _ files: [String], cwd: String) throws {
@@ -88,18 +89,18 @@ extension Config {
         for file in files {
             let full = Self.absolutePath(file, cwd: cwd)
             guard FileManager.default.fileExists(atPath: full) else { throw FFError.fileNotFound(full) }
-            let rel = try relativePath(of: file, in: name, cwd: cwd)
-            if !projects[i].keyFiles.contains(rel) { projects[i].keyFiles.append(rel) }
+            let key = try keyFilePath(of: file, in: name, cwd: cwd)
+            if !projects[i].keyFiles.contains(key) { projects[i].keyFiles.append(key) }
         }
     }
 
-    /// Each file may be the stored relative path, or a path (absolute or relative to `cwd`) to the file.
+    /// Each file may be the stored path, or a path (absolute or relative to `cwd`) to the item.
     public mutating func removeFiles(_ name: String, _ files: [String], cwd: String) throws {
         let i = try index(of: name)
         for file in files {
-            var rel = file
-            if !projects[i].keyFiles.contains(file) { rel = try relativePath(of: file, in: name, cwd: cwd) }
-            guard let j = projects[i].keyFiles.firstIndex(of: rel) else { throw FFError.notInList(rel) }
+            var key = file
+            if !projects[i].keyFiles.contains(file) { key = try keyFilePath(of: file, in: name, cwd: cwd) }
+            guard let j = projects[i].keyFiles.firstIndex(of: key) else { throw FFError.notInList(key) }
             projects[i].keyFiles.remove(at: j)
         }
     }

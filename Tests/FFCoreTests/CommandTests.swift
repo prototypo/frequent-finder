@@ -80,7 +80,6 @@ private func fixture() throws -> String {
     try c.addFiles("proj", ["proj/docs/spec.md"], cwd: dir)
     try c.addFiles("proj", [dir + "/proj/docs/spec.md"], cwd: "/")   // same file, absolute: ignored
     #expect(c.projects[0].keyFiles == ["docs/spec.md"])
-    #expect(throws: FFError.fileOutsideProject(dir + "/outside.md")) { try c.addFiles("proj", ["outside.md"], cwd: dir) }
     #expect(throws: FFError.fileNotFound(dir + "/proj/missing.md")) { try c.addFiles("proj", ["proj/missing.md"], cwd: dir) }
     try c.removeFiles("proj", ["docs/spec.md"], cwd: "/")             // stored relative path works from anywhere
     #expect(c.projects[0].keyFiles.isEmpty)
@@ -127,5 +126,20 @@ private func fixture() throws -> String {
     try c.add(path: "proj", cwd: dir)
     try c.addFiles("proj", [dir + "/proj/docs", dir + "/proj/docs/spec.md"], cwd: "/")
     #expect(c.projects[0].keyFiles == ["docs", "docs/spec.md"])
-    #expect(throws: FFError.fileOutsideProject(dir + "/proj")) { try c.addFiles("proj", [dir + "/proj"], cwd: "/") }
+}
+
+@Test func keyFilesOutsideProjectAreStoredAbsolute() throws {
+    let dir = try fixture()
+    var c = Config()
+    try c.add(path: "proj", cwd: dir)
+    try c.addFiles("proj", ["outside.md", "other"], cwd: dir)
+    try c.addFiles("proj", [dir + "/outside.md"], cwd: "/")         // same item again: ignored
+    #expect(c.projects[0].keyFiles == [dir + "/outside.md", dir + "/other"])
+    let p = c.projects[0]
+    #expect(p.fullPath(of: "docs/spec.md") == dir + "/proj/docs/spec.md")
+    #expect(p.fullPath(of: dir + "/outside.md") == dir + "/outside.md")
+    try c.removeFiles("proj", ["outside.md"], cwd: dir)                // path relative to cwd
+    try c.removeFiles("proj", [dir + "/other"], cwd: "/")              // stored path
+    #expect(c.projects[0].keyFiles.isEmpty)
+    #expect(throws: FFError.notInList(dir + "/outside.md")) { try c.removeFiles("proj", ["outside.md"], cwd: dir) }
 }

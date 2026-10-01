@@ -8,7 +8,6 @@ public enum FFError: Error, Equatable, CustomStringConvertible, LocalizedError {
     case emptyName
     case notADirectory(String)
     case fileNotFound(String)
-    case fileOutsideProject(String)
     case notInList(String)
     case badURL(String)
     case launchFailed(String)
@@ -22,7 +21,6 @@ public enum FFError: Error, Equatable, CustomStringConvertible, LocalizedError {
         case .emptyName: "Project name cannot be empty."
         case .notADirectory(let path): "Not a directory: \(path)"
         case .fileNotFound(let path): "File not found: \(path)"
-        case .fileOutsideProject(let path): "File is not inside the project folder: \(path)"
         case .notInList(let item): "Not in the list: \(item)"
         case .badURL(let url): "Not a valid http, https or file URL: \(url)"
         case .launchFailed(let detail): "Could not open: \(detail)"

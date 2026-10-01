@@ -57,7 +57,7 @@ scripts/make-app.sh
 - `terminal`: `"terminal"` or `"iterm"`. Default `"terminal"`.
 - `name`: unique, compared case-insensitively. Used by the CLI to pick a project.
 - `path`: absolute path. `~` is expanded on input, stored expanded.
-- `keyFiles`: paths relative to `path`. Must resolve inside `path`.
+- `keyFiles`: files or folders. Stored relative to `path` when inside it, else as an absolute path.
 - `urls[].label`: optional. If missing, the URL itself is shown.
 - Project order = array order.
 - Missing file on first run = empty config. The directory is created on first save.
@@ -110,8 +110,8 @@ One window per project (`WindowGroup(for:)` keyed by project name).
 - Project detail (right):
   - Name (text field; duplicate names rejected with an inline message).
   - Path (text + "Choose…" folder picker).
-  - Key files: list with remove; "Add Files…" opens `NSOpenPanel` at the project
-    folder with multiple selection. Files outside the project folder are rejected.
+  - Key files: list with remove; "Add Files or Folders…" opens `NSOpenPanel` at the project
+    folder with multiple selection of files and folders, from any location.
   - URLs: list of label + URL with add, edit, remove.
 - Every change saves immediately.
 
@@ -143,8 +143,8 @@ ff help
 - Arguments parsed by hand (no ArgumentParser).
 - Errors go to stderr with a clear message and exit code 1. Usage errors exit 2.
 - `add` rejects a path that is not an existing directory and a duplicate name.
-- `file add` rejects files outside the project folder and files that do not exist;
-  stores the relative path; ignores duplicates.
+- `file add` rejects files that do not exist; stores the path relative to the project
+  when inside it, else absolute; ignores duplicates.
 - `url add` rejects strings that are not valid `http`/`https`/`file` URLs.
 - Command logic lives in FFCore as functions over the config value, so it is
   testable without spawning a process.

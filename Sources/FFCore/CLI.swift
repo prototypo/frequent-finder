@@ -8,7 +8,7 @@ public enum CLI {
       ff remove <name>
       ff rename <name> <new-name>
       ff set-path <name> <path>
-      ff file add <name> <file>...          add key files (inside the project folder)
+      ff file add <name> <file>...          add key files or folders (any location)
       ff file remove <name> <file>...
       ff url add <name> <url> [--label "Label"]
       ff url remove <name> <url>

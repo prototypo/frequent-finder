@@ -35,7 +35,7 @@ public struct Project: Codable, Hashable, Sendable {
     public var name: String
     /// Absolute path of the project's top-level folder.
     public var path: String
-    /// Paths relative to `path`.
+    /// Files and folders: relative to `path` when inside the project, else absolute.
     public var keyFiles: [String]
     public var urls: [ProjectURL]
 
@@ -44,6 +44,11 @@ public struct Project: Codable, Hashable, Sendable {
         self.path = path
         self.keyFiles = keyFiles
         self.urls = urls
+    }
+
+    /// The full path of a stored key file.
+    public func fullPath(of keyFile: String) -> String {
+        keyFile.hasPrefix("/") ? keyFile : (path as NSString).appendingPathComponent(keyFile)
     }
 
     public init(from decoder: Decoder) throws {

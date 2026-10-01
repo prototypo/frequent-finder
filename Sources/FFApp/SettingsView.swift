@@ -134,8 +134,8 @@ struct ProjectEditor: View {
             Section("Key Files and Folders") {
                 ForEach(project.keyFiles, id: \.self) { file in
                     HStack {
-                        KeyFileIcon(path: (project.path as NSString).appendingPathComponent(file))
-                        Text(file)
+                        KeyFileIcon(path: project.fullPath(of: file))
+                        Text((file as NSString).abbreviatingWithTildeInPath)
                         Spacer()
                         iconButton("minus.circle", "Remove \(file)") {
                             model.update { try $0.removeFiles(project.name, [file], cwd: "/") }
@@ -195,7 +195,7 @@ struct ProjectEditor: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        panel.message = "Choose files or folders inside the project. ⌘-click to choose several."
+        panel.message = "Choose files or folders. ⌘-click to choose several."
         panel.directoryURL = URL(fileURLWithPath: project.path)
         panel.prompt = "Add"
         guard panel.runModal() == .OK else { return }
