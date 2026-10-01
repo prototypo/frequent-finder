@@ -20,7 +20,7 @@ struct MenuContent: View {
                         openWindow(value: project.name)
                         bringToFront(title: project.name)
                     } label: {
-                        Label(project.name, systemImage: GitSymbol.name(for: status))
+                        Label(GitSymbol.menuTitle(project.name, status), systemImage: GitSymbol.name(for: status))
                     }
                     .accessibilityLabel("\(project.name), \(GitSymbol.description(for: status))")
                 } else {
@@ -66,8 +66,18 @@ enum GitSymbol {
         return status.isDirty ? .orange : .green
     }
 
+    /// "clean", "3 changed, 2 to push, 1 to pull", ...
     static func description(for status: GitStatus?) -> String {
         guard let status else { return "not a git repository" }
-        return status.isDirty ? "\(status.changes) changed" : "clean"
+        var parts = [status.isDirty ? "\(status.changes) changed" : "clean"]
+        if status.ahead > 0 { parts.append("\(status.ahead) to push") }
+        if status.behind > 0 { parts.append("\(status.behind) to pull") }
+        return parts.joined(separator: ", ")
+    }
+
+    /// Project name plus "↑2 ↓1" when out of sync with its upstream.
+    static func menuTitle(_ name: String, _ status: GitStatus?) -> String {
+        guard let summary = status?.syncSummary, !summary.isEmpty else { return name }
+        return "\(name)  \(summary)"
     }
 }

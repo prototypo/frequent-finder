@@ -3,7 +3,8 @@
 A macOS menu bar utility to keep track of current projects and their files.
 
 - Click the menu bar icon to see your projects, each with a git status symbol
-  (✓ clean, ✎ dirty, dashed circle = not a git repo).
+  (✓ clean, ✎ dirty, dashed circle = not a git repo), plus ↑N commits to push and
+  ↓N to pull (as of the last `git fetch`).
 - Click a project to open its window: open the folder in Finder, open Terminal or
   iTerm there, see the branch, open key files and links.
 - Settings… (⌘,) edits projects, the terminal choice, Show in menu bar, and Open at login.
