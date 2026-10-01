@@ -7,6 +7,7 @@ let package = Package(
     targets: [
         .target(name: "FFCore"),
         .executableTarget(name: "ff", dependencies: ["FFCore"]),
+        .executableTarget(name: "FrequentFinder", dependencies: ["FFCore"], path: "Sources/FFApp"),
         .testTarget(name: "FFCoreTests", dependencies: ["FFCore"]),
     ],
     swiftLanguageModes: [.v5]
