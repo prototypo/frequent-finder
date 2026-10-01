@@ -32,18 +32,14 @@ final class AppModel {
         (try? config.index(of: name)).map { config.projects[$0] }
     }
 
-    /// Applies a change to a copy, saves it, and only then shows it.
+    /// Applies a change to the latest file contents, saves it, and only then shows it.
     func update(_ change: (inout Config) throws -> Void) {
-        guard loadError == nil else {
-            error = "The config file cannot be read, so changes are turned off. Fix or delete it first."
-            return
-        }
-        var copy = config
         do {
-            try change(&copy)
-            try store.save(copy)
-            config = copy
+            config = try store.update(change)
+            loadError = nil
             error = nil
+        } catch FFError.badConfig(let detail) {
+            loadError = "\(FFError.badConfig(detail))"
         } catch {
             self.error = "\(error)"
         }
@@ -68,8 +64,8 @@ final class AppModel {
         }
     }
 
-    /// Watches the config folder. Atomic saves (ours and the CLI's) replace the file, which changes the folder.
-    // ponytail: misses editors that write projects.json in place; watch the file itself too if that matters.
+    /// Watches the config folder so the display follows atomic saves (ours and the CLI's).
+    // ponytail: display misses editors that write projects.json in place; harmless, since update() re-reads before saving.
     private func watch() {
         let dir = store.url.deletingLastPathComponent()
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

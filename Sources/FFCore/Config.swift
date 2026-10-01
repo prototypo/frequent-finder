@@ -109,4 +109,15 @@ public struct ConfigStore: Sendable {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try config.jsonData().write(to: url, options: .atomic)
     }
+
+    /// Re-reads the file, applies `change`, and saves if anything changed. Reading first means
+    /// edits made by others since our last read are kept, and a broken file is never overwritten.
+    @discardableResult
+    public func update(_ change: (inout Config) throws -> Void) throws -> Config {
+        var config = try load()
+        let before = config
+        try change(&config)
+        if config != before { try save(config) }
+        return config
+    }
 }

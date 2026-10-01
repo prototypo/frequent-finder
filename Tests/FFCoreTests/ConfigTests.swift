@@ -43,3 +43,22 @@ private func tempStore() throws -> ConfigStore {
     #expect(TerminalApp.terminal.bundleID == "com.apple.Terminal")
     #expect(TerminalApp.iterm.bundleID == "com.googlecode.iterm2")
 }
+
+@Test func updateAppliesChangeOnTopOfLatestFile() throws {
+    let store = try tempStore()
+    try store.save(Config(projects: [Project(name: "A", path: "/a")]))
+    // Someone else (ff, an editor) changes the file after the app last read it.
+    try store.save(Config(projects: [Project(name: "A", path: "/a"), Project(name: "B", path: "/b")]))
+    let result = try store.update { $0.terminal = .iterm }
+    let expected = Config(terminal: .iterm, projects: [Project(name: "A", path: "/a"), Project(name: "B", path: "/b")])
+    #expect(result == expected)
+    #expect(try store.load() == expected)
+}
+
+@Test func updateLeavesBrokenFileUntouched() throws {
+    let store = try tempStore()
+    try FileManager.default.createDirectory(at: store.url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try Data("{ not json".utf8).write(to: store.url)
+    #expect(throws: FFError.self) { try store.update { $0.terminal = .iterm } }
+    #expect(try String(contentsOf: store.url, encoding: .utf8) == "{ not json")
+}

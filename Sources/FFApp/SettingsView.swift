@@ -48,7 +48,7 @@ struct SettingsView: View {
                 }
                 .frame(width: 200)
                 if let project = selected {
-                    ProjectEditor(project: project).id(selection)
+                    ProjectEditor(project: project).id(project.name)
                 } else {
                     Text("Select a project").foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)

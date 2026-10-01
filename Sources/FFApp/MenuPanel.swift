@@ -39,6 +39,10 @@ struct MenuPanel: View {
         .padding(.top, 4)
         .frame(width: 280)
         .onAppear { model.refreshGit(model.config.projects.map(\.path)) }
+        // The panel's view stays alive between openings, so onAppear alone goes stale. Refresh whenever a window of ours gets focus.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+            model.refreshGit(model.config.projects.map(\.path))
+        }
     }
 }
 
