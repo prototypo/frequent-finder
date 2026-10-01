@@ -9,6 +9,9 @@ A macOS menu bar utility to keep track of current projects and their files.
   iTerm there, see the branch, open key files and links.
 - A project can list git repositories (for a folder holding many repos). Each shows its own
   status; the menu sums them up. Settings → Find Repositories adds all repos up to 3 levels down.
+- Open All Projects (in the menu) shows a resizable window with every project on the left and
+  the selected one's details on the right. It shows a Dock icon while open, remembers its size,
+  and reopens at launch if it was open when the app quit.
 - Settings… (⌘,) edits projects, the terminal choice, Show in menu bar, and Open at login.
   If you hide the menu bar icon, open the app again from Finder or Spotlight to bring it back.
 - The `ff` command does the same from the command line.

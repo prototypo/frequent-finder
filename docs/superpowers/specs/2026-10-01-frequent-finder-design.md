@@ -109,6 +109,14 @@ One window per project (`WindowGroup(for:)` keyed by project name).
   a reveal button shows it in Finder. Missing files are greyed out.
 - URLs section (hidden if empty): click opens in the default browser.
 
+### All Projects window
+
+- Menu item "Open All Projects" opens one resizable window: a sidebar listing every project (git
+  symbol, ↑/↓) and the selected project's details (same view as the project window).
+- Size and place are saved (`setFrameAutosaveName`); the selection is remembered.
+- While open, the app is a regular app (Dock icon, ⌘-Tab); closing it returns to menu-bar-only.
+- If it is open when the app quits, it reopens at the next launch (`allProjectsOpen` default).
+
 ### Settings window
 
 - Terminal picker: Terminal / iTerm.

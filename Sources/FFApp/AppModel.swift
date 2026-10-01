@@ -17,6 +17,8 @@ final class AppModel {
     private(set) var git: [String: GitStatus] = [:]
     @ObservationIgnored private var watcher: DispatchSourceFileSystemObject?
     @ObservationIgnored private var timer: Timer?
+    /// The All Projects window while it is open, so the menu can bring it to the front.
+    @ObservationIgnored weak var allProjectsWindow: NSWindow?
 
     /// A menu cannot run code when it opens, so git status refreshes on load, every
     /// minute, and whenever one of our windows comes to the front.

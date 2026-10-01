@@ -24,6 +24,15 @@ struct FrequentFinderApp: App {
         .defaultLaunchBehavior(.suppressed)
         .restorationBehavior(.disabled)
 
+        Window("Frequent Finder", id: "all") {
+            AllProjectsView().environment(model)
+        }
+        .defaultSize(width: 900, height: 600)
+        // Reopen at launch if it was open when the app last quit. Our own flag, not system window
+        // restoration, so it works whatever the "close windows when quitting" setting is.
+        .defaultLaunchBehavior(UserDefaults.standard.bool(forKey: allProjectsOpenKey) ? .presented : .suppressed)
+        .restorationBehavior(.disabled)
+
         Window("Frequent Finder Settings", id: "settings") {
             SettingsView().environment(model)
                 .windowMinimizeBehavior(.disabled)
@@ -36,6 +45,14 @@ struct FrequentFinderApp: App {
 
 /// Opening the app again (Finder, Spotlight) brings back a hidden menu bar icon.
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Set when the app starts quitting, so closing windows then is not mistaken for the user closing them.
+    @MainActor static var isTerminating = false
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        AppDelegate.isTerminating = true
+        return .terminateNow
+    }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         UserDefaults.standard.set(true, forKey: showInMenuBarKey)
         return true

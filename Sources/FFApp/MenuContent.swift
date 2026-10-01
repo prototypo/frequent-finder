@@ -18,7 +18,7 @@ struct MenuContent: View {
                     let status = model.combinedGit(project)
                     Button {
                         openWindow(value: project.name)
-                        bringToFront(title: project.name)
+                        bringToFront { $0.title == project.name }
                     } label: {
                         Label(GitSymbol.menuTitle(project.name, status), systemImage: GitSymbol.name(for: status))
                     }
@@ -30,9 +30,14 @@ struct MenuContent: View {
             }
         }
         Divider()
+        Button("Open All Projects") {
+            openWindow(id: "all")
+            bringToFront { $0 === model.allProjectsWindow }
+        }
+        Divider()
         Button("Settings…") {
             openWindow(id: "settings")
-            bringToFront(title: "Frequent Finder Settings")
+            bringToFront { $0.title == "Frequent Finder Settings" }
         }
         .keyboardShortcut(",")
         Button("Quit Frequent Finder") { NSApp.terminate(nil) }
@@ -44,11 +49,11 @@ struct MenuContent: View {
 /// refuses NSApp.activate() when the menu item was chosen with its key equivalent, which left the
 /// window behind the frontmost app; orderFrontRegardless works without activation. In that case the
 /// window is in front but takes keyboard focus only once clicked.
-@MainActor private func bringToFront(title: String) {
+@MainActor private func bringToFront(_ isTarget: @escaping (NSWindow) -> Bool) {
     NSApp.activate()
     // The window gets its title on the next run-loop turn.
     DispatchQueue.main.async {
-        guard let window = NSApp.windows.first(where: { $0.title == title && $0.isVisible }) else { return }
+        guard let window = NSApp.windows.first(where: { $0.isVisible && isTarget($0) }) else { return }
         window.orderFrontRegardless()
         window.makeKey()
     }
