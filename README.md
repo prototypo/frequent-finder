@@ -2,11 +2,12 @@
 
 A macOS menu bar utility to keep track of current projects and their files.
 
-- Click the menu bar icon to see your projects, each with a git status dot
-  (green = clean, orange = dirty, grey = not a git repo).
+- Click the menu bar icon to see your projects, each with a git status symbol
+  (✓ clean, ✎ dirty, dashed circle = not a git repo).
 - Click a project to open its window: open the folder in Finder, open Terminal or
   iTerm there, see the branch, open key files and links.
-- Settings (gear icon) edits projects, the terminal choice, and Open at login.
+- Settings… (⌘,) edits projects, the terminal choice, Show in menu bar, and Open at login.
+  If you hide the menu bar icon, open the app again from Finder or Spotlight to bring it back.
 - The `ff` command does the same from the command line.
 
 ## Build and install
@@ -62,6 +63,7 @@ The app reloads it when it changes.
 
 ```bash
 swift test
+swift scripts/make-icon.swift   # redraws Resources/AppIcon.icns
 ```
 
 The old Python/Qt attempt is in `old-python/` and is not used.
