@@ -66,9 +66,9 @@ struct ProjectWindow: View {
                 model.settingsSelection = p.name
                 openWindow(id: "settings")
             } label: {
-                Label("Edit Project…", systemImage: "pencil")
+                Label("Project Settings…", systemImage: "gearshape")
             }
-            .help("Edit this project in Settings (⌘,)")
+            .help("Open Settings for this project (⌘,)")
             .keyboardShortcut(",")
         }
     }
