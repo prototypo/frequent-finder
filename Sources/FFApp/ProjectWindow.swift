@@ -4,7 +4,6 @@ import SwiftUI
 struct ProjectWindow: View {
     let name: String
     @Environment(AppModel.self) private var model
-    @Environment(\.controlActiveState) private var activeState
 
     var body: some View {
         if let project = model.project(named: name) {
@@ -29,7 +28,7 @@ struct ProjectWindow: View {
                 }
                 HStack {
                     Button("Open in Finder") { model.attempt { try Launcher.open(p.path) } }
-                    Button("Open \(model.config.terminal.displayName)") {
+                    Button("Open in \(model.config.terminal.displayName)") {
                         model.attempt { try Launcher.openTerminal(at: p.path, app: model.config.terminal) }
                     }
                 }
@@ -56,10 +55,6 @@ struct ProjectWindow: View {
         }
         .formStyle(.grouped)
         .navigationTitle(p.name)
-        .onAppear { model.refreshGit([p.path]) }
-        .onChange(of: activeState) { _, state in
-            if state == .key { model.refreshGit([p.path]) }
-        }
     }
 }
 
@@ -68,13 +63,11 @@ struct GitLine: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            GitDot(status: status)
-            if let status {
-                Text(status.branch)
-                Text(status.isDirty ? "\(status.changes) changed" : "clean").foregroundStyle(.secondary)
-            } else {
-                Text("Not a git repository").foregroundStyle(.secondary)
-            }
+            Image(systemName: GitSymbol.name(for: status))
+                .foregroundStyle(GitSymbol.color(for: status))
+                .accessibilityHidden(true)
+            if let status { Text(status.branch) }
+            Text(GitSymbol.description(for: status)).foregroundStyle(.secondary)
         }
     }
 }

@@ -58,13 +58,18 @@ private func fixture() throws -> String {
     #expect(c.projects.isEmpty)
 }
 
-@Test func moveClampsToEnds() throws {
+/// `to` uses SwiftUI List .onMove semantics: the index, in the list before the move, to insert in front of.
+@Test func moveToListPosition() throws {
     var c = Config(projects: ["a", "b", "c"].map { Project(name: $0, path: "/" + $0) })
-    try c.move("c", by: -1)
-    #expect(c.projects.map(\.name) == ["a", "c", "b"])
-    try c.move("a", by: -5)
-    #expect(c.projects.map(\.name) == ["a", "c", "b"])
-    try c.move("a", by: 9)
+    try c.move("a", to: 3)
+    #expect(c.projects.map(\.name) == ["b", "c", "a"])
+    try c.move("a", to: 0)
+    #expect(c.projects.map(\.name) == ["a", "b", "c"])
+    try c.move("a", to: 2)
+    #expect(c.projects.map(\.name) == ["b", "a", "c"])
+    try c.move("c", to: 99)
+    #expect(c.projects.map(\.name) == ["b", "a", "c"])
+    try c.move("c", to: -4)
     #expect(c.projects.map(\.name) == ["c", "b", "a"])
 }
 

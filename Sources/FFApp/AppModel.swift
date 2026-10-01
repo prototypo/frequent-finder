@@ -1,3 +1,4 @@
+import AppKit
 import FFCore
 import Foundation
 import Observation
@@ -13,10 +14,19 @@ final class AppModel {
     /// Git status by project path. Missing = not a git repo, or not checked yet.
     private(set) var git: [String: GitStatus] = [:]
     @ObservationIgnored private var watcher: DispatchSourceFileSystemObject?
+    @ObservationIgnored private var timer: Timer?
 
+    /// A menu cannot run code when it opens, so git status refreshes on load, every
+    /// minute, and whenever one of our windows comes to the front.
     init() {
         reload()
         watch()
+        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshAllGit() }
+        }
+        NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshAllGit() }
+        }
     }
 
     func reload() {
@@ -26,6 +36,7 @@ final class AppModel {
         } catch {
             loadError = "\(error)"
         }
+        refreshAllGit()
     }
 
     func project(named name: String) -> Project? {
@@ -53,6 +64,10 @@ final class AppModel {
         } catch {
             self.error = "\(error)"
         }
+    }
+
+    func refreshAllGit() {
+        refreshGit(config.projects.map(\.path))
     }
 
     func refreshGit(_ paths: [String]) {

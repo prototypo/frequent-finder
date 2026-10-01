@@ -63,11 +63,12 @@ extension Config {
         projects[i].path = try Self.directory(path, cwd: cwd)
     }
 
-    /// Moves a project up (negative) or down (positive), stopping at the ends.
-    public mutating func move(_ name: String, by offset: Int) throws {
+    /// Moves a project in front of the one at `destination`, counted before the move
+    /// (SwiftUI List `.onMove` semantics). Out-of-range destinations stop at the ends.
+    public mutating func move(_ name: String, to destination: Int) throws {
         let i = try index(of: name)
-        let j = min(max(i + offset, 0), projects.count - 1)
-        projects.insert(projects.remove(at: i), at: j)
+        let d = min(max(destination, 0), projects.count)
+        projects.insert(projects.remove(at: i), at: d > i ? d - 1 : d)
     }
 
     /// `file` relative to the project's folder. Tries the paths as given first, then with

@@ -5,7 +5,10 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
-    @State private var selection: Int?
+    @AppStorage(showInMenuBarKey) private var showInMenuBar = true
+    /// Selected project, by name, so it survives reordering.
+    @State private var selection: String?
+    @State private var confirmingRemove = false
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
 
     var body: some View {
@@ -20,6 +23,8 @@ struct SettingsView: View {
                 )) {
                     ForEach(TerminalApp.allCases, id: \.self) { Text($0.displayName).tag($0) }
                 }
+                Toggle("Show in menu bar", isOn: $showInMenuBar)
+                    .help("When hidden, open Frequent Finder again from Finder or Spotlight to show it.")
                 Toggle("Open at login", isOn: Binding(
                     get: { openAtLogin },
                     set: { on in
@@ -33,22 +38,28 @@ struct SettingsView: View {
             HStack(alignment: .top) {
                 VStack(spacing: 0) {
                     List(selection: $selection) {
-                        ForEach(Array(model.config.projects.enumerated()), id: \.offset) { i, project in
-                            Text(project.name).tag(i)
-                        }
+                        ForEach(model.config.projects, id: \.name) { Text($0.name).tag($0.name) }
+                            .onMove { from, to in
+                                guard let i = from.first else { return }
+                                let name = model.config.projects[i].name
+                                model.update { try $0.move(name, to: to) }
+                            }
                     }
-                    HStack {
-                        iconButton("plus", "Add project") { addProject() }
-                        iconButton("minus", "Remove project") { removeSelected() }.disabled(selected == nil)
-                        iconButton("arrow.up", "Move up") { moveSelected(by: -1) }.disabled(selected == nil)
-                        iconButton("arrow.down", "Move down") { moveSelected(by: 1) }.disabled(selected == nil)
+                    .onDeleteCommand { if selected != nil { confirmingRemove = true } }
+                    Divider()
+                    HStack(spacing: 0) {
+                        listButton("plus", "Add Project…") { addProject() }
+                        Divider().frame(height: 16)
+                        listButton("minus", "Remove Project") { confirmingRemove = true }
+                            .disabled(selected == nil)
                         Spacer()
                     }
-                    .padding(4)
+                    .padding(2)
                 }
                 .frame(width: 200)
+                .border(.separator)
                 if let project = selected {
-                    ProjectEditor(project: project).id(project.name)
+                    ProjectEditor(project: project, selection: $selection).id(project.name)
                 } else {
                     Text("Select a project").foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -59,12 +70,23 @@ struct SettingsView: View {
             }
         }
         .padding()
-        .frame(minWidth: 680, minHeight: 480)
+        .frame(width: 700, height: 560)
+        .confirmationDialog(
+            "Remove “\(selected?.name ?? "")”?",
+            isPresented: $confirmingRemove,
+            presenting: selected
+        ) { project in
+            Button("Remove", role: .destructive) {
+                model.update { try $0.remove(project.name) }
+                selection = nil
+            }
+        } message: { _ in
+            Text("Its key files and links are removed from Frequent Finder. Nothing on disk is changed.")
+        }
     }
 
     private var selected: Project? {
-        guard let i = selection, model.config.projects.indices.contains(i) else { return nil }
-        return model.config.projects[i]
+        selection.flatMap { model.project(named: $0) }
     }
 
     private func addProject() {
@@ -74,24 +96,21 @@ struct SettingsView: View {
         panel.prompt = "Add Project"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         model.update { try $0.add(path: url.path, cwd: "/") }
-        if model.error == nil { selection = model.config.projects.count - 1 }
+        if model.error == nil { selection = model.config.projects.last?.name }
     }
 
-    private func removeSelected() {
-        guard let project = selected else { return }
-        model.update { try $0.remove(project.name) }
-        selection = nil
-    }
-
-    private func moveSelected(by offset: Int) {
-        guard let project = selected else { return }
-        model.update { try $0.move(project.name, by: offset) }
-        selection = try? model.config.index(of: project.name)
+    /// The small +/− buttons under a list, as in System Settings.
+    private func listButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) { Image(systemName: symbol).frame(width: 24, height: 20) }
+            .buttonStyle(.borderless)
+            .help(label)
+            .accessibilityLabel(label)
     }
 }
 
 struct ProjectEditor: View {
     let project: Project
+    @Binding var selection: String?
     @Environment(AppModel.self) private var model
     @State private var name = ""
     @FocusState private var nameFocused: Bool
@@ -155,7 +174,9 @@ struct ProjectEditor: View {
     }
 
     private func rename() {
-        if name != project.name { model.update { try $0.rename(project.name, to: name) } }
+        guard name != project.name else { return }
+        model.update { try $0.rename(project.name, to: name) }
+        if model.error == nil { selection = name }
     }
 
     private func choosePath() {
