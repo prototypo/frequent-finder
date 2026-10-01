@@ -69,6 +69,8 @@ struct SettingsView: View {
         }
         .padding()
         .frame(width: 700, height: 560)
+        .onAppear(perform: addProjectIfRequested)
+        .onChange(of: model.pendingAddProject) { addProjectIfRequested() }
         .confirmationDialog(
             "Remove “\(selected?.name ?? "")”?",
             isPresented: $confirmingRemove,
@@ -95,6 +97,13 @@ struct SettingsView: View {
 
     private var selected: Project? {
         selection.flatMap { model.project(named: $0) }
+    }
+
+    private func addProjectIfRequested() {
+        guard model.pendingAddProject else { return }
+        model.pendingAddProject = false
+        // Let the window finish appearing before the folder panel opens.
+        DispatchQueue.main.async { addProject() }
     }
 
     private func addProject() {

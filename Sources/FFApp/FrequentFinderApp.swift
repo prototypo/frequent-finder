@@ -20,6 +20,7 @@ struct FrequentFinderApp: App {
         WindowGroup("Project", for: String.self) { $name in
             ProjectWindow(name: name ?? "").environment(model)
         }
+        .commands { NewProjectCommand(model: model) }
         .defaultSize(width: 440, height: 480)
         .defaultLaunchBehavior(.suppressed)
         .restorationBehavior(.disabled)
@@ -56,5 +57,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         UserDefaults.standard.set(true, forKey: showInMenuBarKey)
         return true
+    }
+}
+
+/// Replaces SwiftUI's automatic File > New Project Window (which opened an empty project window)
+/// with New Project…, which opens Settings and adds a project as its + button does.
+struct NewProjectCommand: Commands {
+    let model: AppModel
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some Commands {
+        CommandGroup(replacing: .newItem) {
+            Button("New Project…") {
+                model.pendingAddProject = true
+                openWindow(id: "settings")
+            }
+            .keyboardShortcut("n")
+        }
     }
 }
