@@ -41,9 +41,10 @@ extension Config {
         return full
     }
 
-    public mutating func add(path: String, name: String? = nil, cwd: String) throws {
-        let full = try Self.directory(path, cwd: cwd)
-        let name = name ?? (full as NSString).lastPathComponent
+    /// `path` nil makes a project with no folder; then `name` is required.
+    public mutating func add(path: String?, name: String? = nil, cwd: String) throws {
+        let full = try path.map { try Self.directory($0, cwd: cwd) }
+        guard let name = name ?? full.map({ ($0 as NSString).lastPathComponent }) else { throw FFError.emptyName }
         try checkName(name)
         projects.append(Project(name: name, path: full))
     }
@@ -63,6 +64,15 @@ extension Config {
         projects[i].path = try Self.directory(path, cwd: cwd)
     }
 
+    /// Removes the project's folder. Items stored relative to it become absolute first.
+    public mutating func clearPath(_ name: String) throws {
+        let i = try index(of: name)
+        let p = projects[i]
+        projects[i].keyFiles = p.keyFiles.map(p.fullPath(of:))
+        projects[i].repos = p.repos.map(p.fullPath(of:))
+        projects[i].path = nil
+    }
+
     /// Moves a project in front of the one at `destination`, counted before the move
     /// (SwiftUI List `.onMove` semantics). Out-of-range destinations stop at the ends.
     public mutating func move(_ name: String, to destination: Int) throws {
@@ -75,8 +85,8 @@ extension Config {
     /// Tries the paths as given first, then with symlinks resolved (file pickers may
     /// return `/private/var/...` for `/var/...`).
     public func keyFilePath(of file: String, in name: String, cwd: String) throws -> String {
-        let root = projects[try index(of: name)].path
         let full = Self.absolutePath(file, cwd: cwd)
+        guard let root = projects[try index(of: name)].path else { return full }
         let resolve = { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }
         for (r, f) in [(root, full), (resolve(root), resolve(full))] where f.hasPrefix(r + "/") {
             return String(f.dropFirst(r.count + 1))
@@ -110,7 +120,8 @@ extension Config {
     public mutating func findRepos(_ name: String) throws -> Int {
         let i = try index(of: name)
         let before = projects[i].repos.count
-        try addRepos(name, Git.findRepositories(under: projects[i].path), cwd: "/")
+        guard let root = projects[i].path else { throw FFError.noFolder(projects[i].name) }
+        try addRepos(name, Git.findRepositories(under: root), cwd: "/")
         return projects[i].repos.count - before
     }
 

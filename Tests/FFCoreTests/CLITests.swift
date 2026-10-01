@@ -91,3 +91,12 @@ private struct Env {
     #expect(try env.store.load().projects[0].repos == ["two", "one"])
     #expect(throws: FFError.usage(CLI.usage)) { try env.ff("repo", "add", "P") }
 }
+
+@Test func projectWithoutFolderCommands() throws {
+    let env = try Env()
+    try env.ff("add", "--name", "Pair")
+    try env.ff("add", ".", "--name", "Q")
+    try env.ff("set-path", "Q", "--none")
+    #expect(try env.ff("list") == "Pair\t(no folder)\nQ\t(no folder)")
+    #expect(throws: FFError.noFolder("Pair")) { try env.ff("repo", "find", "Pair") }
+}

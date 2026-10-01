@@ -5,9 +5,11 @@ public enum CLI {
     usage:
       ff list [--json]                      show all projects
       ff add <path> [--name "Name"]         add a project (name defaults to the folder name)
+      ff add --name "Name"                  add a project with no folder (only repos, files, links)
       ff remove <name>
       ff rename <name> <new-name>
       ff set-path <name> <path>
+      ff set-path <name> --none             remove the project's folder
       ff file add <name> <file>...          add key files or folders (any location)
       ff file remove <name> <file>...
       ff repo add <name> <path>...          add git repositories with their own status
@@ -25,6 +27,7 @@ public enum CLI {
     public static func run(_ argv: [String], store: ConfigStore, cwd: String) throws -> String {
         var args = argv
         let json = takeFlag("--json", from: &args)
+        let noFolder = takeFlag("--none", from: &args)
         let name = try takeOption("--name", from: &args)
         let label = try takeOption("--label", from: &args)
         guard let command = args.first else { throw FFError.usage(usage) }
@@ -43,11 +46,11 @@ public enum CLI {
             } else if config.projects.isEmpty {
                 output = "No projects. Add one with: ff add <path>"
             } else {
-                output = config.projects.map { "\($0.name)\t\($0.path)" }.joined(separator: "\n")
+                output = config.projects.map { "\($0.name)\t\($0.path ?? "(no folder)")" }.joined(separator: "\n")
             }
         case "add":
-            try expect(a.count == 1)
-            try config.add(path: a[0], name: name, cwd: cwd)
+            try expect(a.count == 1 || (a.isEmpty && name != nil))
+            try config.add(path: a.first, name: name, cwd: cwd)
         case "remove":
             try expect(a.count == 1)
             try config.remove(a[0])
@@ -55,8 +58,13 @@ public enum CLI {
             try expect(a.count == 2)
             try config.rename(a[0], to: a[1])
         case "set-path":
-            try expect(a.count == 2)
-            try config.setPath(a[0], to: a[1], cwd: cwd)
+            if noFolder {
+                try expect(a.count == 1)
+                try config.clearPath(a[0])
+            } else {
+                try expect(a.count == 2)
+                try config.setPath(a[0], to: a[1], cwd: cwd)
+            }
         case "file":
             try expect(a.count >= 3)
             let files = Array(a.dropFirst(2))

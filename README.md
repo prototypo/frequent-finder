@@ -29,9 +29,11 @@ Make sure `~/.local/bin` is on your `PATH`.
 ```
 ff list [--json]
 ff add <path> [--name "Name"]
+ff add --name "Name"               # project with no folder
 ff remove <name>
 ff rename <name> <new-name>
 ff set-path <name> <path>
+ff set-path <name> --none          # project with no folder (only repos, files, links)
 ff file add <name> <file>...
 ff file remove <name> <file>...
 ff repo add <name> <path>...
@@ -64,7 +66,8 @@ The app reloads it when it changes.
 }
 ```
 
-`keyFiles` are files or folders: relative to `path` when inside the project, else absolute (shown as `(external)/<name>`). `repos` are stored the same way. `label` is optional. `terminal` is `terminal` or `iterm`.
+`keyFiles` are files or folders: relative to `path` when inside the project, else absolute (shown as `(external)/<name>`). `repos` are stored the same way. `path` may be left out for a project with no folder
+(Settings → Path → Clear); then every item is an absolute path. `label` is optional. `terminal` is `terminal` or `iterm`.
 
 ## Development
 

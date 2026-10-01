@@ -14,7 +14,7 @@ struct MenuContent: View {
             Text("No Projects")
         } else {
             ForEach(model.config.projects, id: \.name) { project in
-                if FileManager.default.fileExists(atPath: project.path) {
+                if project.path.map({ FileManager.default.fileExists(atPath: $0) }) ?? true {
                     let status = model.combinedGit(project)
                     Button {
                         openWindow(value: project.name)

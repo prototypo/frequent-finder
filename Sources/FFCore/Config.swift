@@ -33,15 +33,16 @@ public struct ProjectURL: Codable, Hashable, Sendable {
 
 public struct Project: Codable, Hashable, Sendable {
     public var name: String
-    /// Absolute path of the project's top-level folder.
-    public var path: String
+    /// Absolute path of the project's top-level folder. Nil for a project that is only a set of
+    /// repos, files and links; then every item is stored as an absolute path.
+    public var path: String?
     /// Files and folders: relative to `path` when inside the project, else absolute.
     public var keyFiles: [String]
     public var urls: [ProjectURL]
     /// Git repositories shown with their own status. Stored like `keyFiles`.
     public var repos: [String]
 
-    public init(name: String, path: String, keyFiles: [String] = [], urls: [ProjectURL] = [], repos: [String] = []) {
+    public init(name: String, path: String?, keyFiles: [String] = [], urls: [ProjectURL] = [], repos: [String] = []) {
         self.name = name
         self.path = path
         self.keyFiles = keyFiles
@@ -51,18 +52,22 @@ public struct Project: Codable, Hashable, Sendable {
 
     /// The full path of a stored key file or repo.
     public func fullPath(of keyFile: String) -> String {
-        keyFile.hasPrefix("/") ? keyFile : (path as NSString).appendingPathComponent(keyFile)
+        guard let path, !keyFile.hasPrefix("/") else { return keyFile }
+        return (path as NSString).appendingPathComponent(keyFile)
     }
 
-    /// Short text for a key file or repo: the stored path inside the project, `(external)/<name>` outside it.
+    /// Short text for a key file or repo: the stored path inside the project, `(external)/<name>`
+    /// outside it, or just `<name>` when the project has no folder.
     public func displayName(of keyFile: String) -> String {
-        keyFile.hasPrefix("/") ? "(external)/" + (keyFile as NSString).lastPathComponent : keyFile
+        guard keyFile.hasPrefix("/") else { return keyFile }
+        let last = (keyFile as NSString).lastPathComponent
+        return path == nil ? last : "(external)/" + last
     }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         name = try c.decode(String.self, forKey: .name)
-        path = try c.decode(String.self, forKey: .path)
+        path = try c.decodeIfPresent(String.self, forKey: .path)
         keyFiles = try c.decodeIfPresent([String].self, forKey: .keyFiles) ?? []
         urls = try c.decodeIfPresent([ProjectURL].self, forKey: .urls) ?? []
         repos = try c.decodeIfPresent([String].self, forKey: .repos) ?? []

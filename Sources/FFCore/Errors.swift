@@ -10,6 +10,7 @@ public enum FFError: Error, Equatable, CustomStringConvertible, LocalizedError {
     case fileNotFound(String)
     case notInList(String)
     case notARepository(String)
+    case noFolder(String)
     case badURL(String)
     case launchFailed(String)
 
@@ -23,6 +24,7 @@ public enum FFError: Error, Equatable, CustomStringConvertible, LocalizedError {
         case .notADirectory(let path): "Not a directory: \(path)"
         case .fileNotFound(let path): "File not found: \(path)"
         case .notInList(let item): "Not in the list: \(item)"
+        case .noFolder(let name): "Project '\(name)' has no folder."
         case .notARepository(let path): "Not a git repository (no .git inside): \(path)"
         case .badURL(let url): "Not a valid http, https or file URL: \(url)"
         case .launchFailed(let detail): "Could not open: \(detail)"

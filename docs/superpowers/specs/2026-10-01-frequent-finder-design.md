@@ -62,6 +62,9 @@ scripts/make-app.sh
   containing `.git`. "Find Repositories" / `ff repo find` adds all repos up to 3 levels below the
   project (skipping hidden folders and folders inside a found repo). The menu sums up the project
   folder and its repos: dirty if any is dirty, ↑/↓ added up.
+- `path` is optional: a project with no folder is only a set of repos, files and links, all stored
+  as absolute paths. Its window hides the folder block; Find Repositories is off. Clearing a
+  folder turns relative items absolute first. CLI: `ff add --name X`, `ff set-path X --none`.
 - `urls[].label`: optional. If missing, the URL itself is shown.
 - Project order = array order.
 - Missing file on first run = empty config. The directory is created on first save.

@@ -182,3 +182,30 @@ private func makeRepos(_ root: String, _ paths: [String]) throws {
     #expect(c.projects[0].repos == ["a", "group/b", "l1/l2/l3"])
     #expect(try c.findRepos("proj") == 0)                              // nothing new the second time
 }
+
+@Test func projectWithoutFolder() throws {
+    let dir = try fixture()
+    try makeRepos(dir, ["r1", "r2"])
+    var c = Config()
+    #expect(throws: FFError.emptyName) { try c.add(path: nil, cwd: dir) }
+    try c.add(path: nil, name: "Pair", cwd: dir)
+    #expect(c.projects[0].path == nil)
+    try c.addRepos("Pair", ["r1", "r2"], cwd: dir)
+    #expect(c.projects[0].repos == [dir + "/r1", dir + "/r2"])
+    #expect(c.projects[0].displayName(of: dir + "/r1") == "r1")
+    #expect(c.projects[0].fullPath(of: dir + "/r1") == dir + "/r1")
+    #expect(throws: FFError.noFolder("Pair")) { try c.findRepos("Pair") }
+}
+
+@Test func clearPathMakesItemsAbsolute() throws {
+    let dir = try fixture()
+    try makeRepos(dir, ["proj/a"])
+    var c = Config()
+    try c.add(path: "proj", cwd: dir)
+    try c.addFiles("proj", ["proj/docs/spec.md"], cwd: dir)
+    try c.addRepos("proj", ["proj/a"], cwd: dir)
+    try c.clearPath("proj")
+    #expect(c.projects[0].path == nil)
+    #expect(c.projects[0].keyFiles == [dir + "/proj/docs/spec.md"])
+    #expect(c.projects[0].repos == [dir + "/proj/a"])
+}

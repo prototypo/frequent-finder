@@ -137,8 +137,13 @@ struct ProjectEditor: View {
                 .onChange(of: nameFocused) { _, focused in if !focused { rename() } }
             LabeledContent("Path") {
                 HStack {
-                    Text(project.path).lineLimit(1).truncationMode(.middle)
+                    Text(project.path ?? "No folder").lineLimit(1).truncationMode(.middle)
+                        .foregroundStyle(project.path == nil ? .secondary : .primary)
                     Button("Choose…", action: choosePath)
+                    if project.path != nil {
+                        Button("Clear") { model.update { try $0.clearPath(project.name) } }
+                            .help("Make this a project with no folder. Its files and repos stay listed.")
+                    }
                 }
             }
             Section("Key Files and Folders") {
@@ -169,6 +174,7 @@ struct ProjectEditor: View {
                 HStack {
                     Button("Add Repositories…", action: addRepos)
                     Button("Find Repositories", action: findRepos)
+                        .disabled(project.path == nil)
                         .help("Adds every git repository up to 3 folder levels below the project.")
                     if let findResult { Text(findResult).foregroundStyle(.secondary) }
                 }
@@ -213,7 +219,7 @@ struct ProjectEditor: View {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
-        panel.directoryURL = URL(fileURLWithPath: project.path)
+        panel.directoryURL = project.path.map { URL(fileURLWithPath: $0) }
         panel.prompt = "Choose"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         model.update { try $0.setPath(project.name, to: url.path, cwd: "/") }
@@ -224,7 +230,7 @@ struct ProjectEditor: View {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        panel.directoryURL = URL(fileURLWithPath: project.path)
+        panel.directoryURL = project.path.map { URL(fileURLWithPath: $0) }
         panel.message = "Choose git repository folders. ⌘-click to choose several."
         panel.prompt = "Add"
         guard panel.runModal() == .OK else { return }
@@ -245,7 +251,7 @@ struct ProjectEditor: View {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
         panel.message = "Choose files or folders. ⌘-click to choose several."
-        panel.directoryURL = URL(fileURLWithPath: project.path)
+        panel.directoryURL = project.path.map { URL(fileURLWithPath: $0) }
         panel.prompt = "Add"
         guard panel.runModal() == .OK else { return }
         model.update { try $0.addFiles(project.name, panel.urls.map(\.path), cwd: "/") }

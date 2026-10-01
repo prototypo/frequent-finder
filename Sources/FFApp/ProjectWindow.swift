@@ -14,25 +14,32 @@ struct ProjectWindow: View {
         }
     }
 
+    /// Path, git status, and Finder/terminal buttons for the project's own folder.
+    private func folderSection(_ path: String) -> some View {
+        Section {
+            LabeledContent("Path") { Text(path).textSelection(.enabled) }
+            LabeledContent("Git") {
+                HStack {
+                    GitLine(status: model.git[path])
+                    Button { model.refreshGit([path]) } label: { Image(systemName: "arrow.clockwise") }
+                        .buttonStyle(.borderless)
+                        .help("Refresh")
+                        .accessibilityLabel("Refresh git status")
+                }
+            }
+            HStack {
+                Button("Open in Finder") { model.attempt { try Launcher.open(path) } }
+                Button("Open in \(model.config.terminal.displayName)") {
+                    model.attempt { try Launcher.openTerminal(at: path, app: model.config.terminal) }
+                }
+            }
+        }
+    }
+
     private func details(_ p: Project) -> some View {
         Form {
-            Section {
-                LabeledContent("Path") { Text(p.path).textSelection(.enabled) }
-                LabeledContent("Git") {
-                    HStack {
-                        GitLine(status: model.git[p.path])
-                        Button { model.refreshGit([p.path]) } label: { Image(systemName: "arrow.clockwise") }
-                            .buttonStyle(.borderless)
-                            .help("Refresh")
-                            .accessibilityLabel("Refresh git status")
-                    }
-                }
-                HStack {
-                    Button("Open in Finder") { model.attempt { try Launcher.open(p.path) } }
-                    Button("Open in \(model.config.terminal.displayName)") {
-                        model.attempt { try Launcher.openTerminal(at: p.path, app: model.config.terminal) }
-                    }
-                }
+            if let path = p.path {
+                folderSection(path)
             }
             if !p.keyFiles.isEmpty {
                 Section("Key Files and Folders") {
