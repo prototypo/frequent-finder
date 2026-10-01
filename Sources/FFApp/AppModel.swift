@@ -9,6 +9,8 @@ final class AppModel {
     private(set) var config = Config()
     /// Set when projects.json cannot be read. Edits are blocked so the file is never overwritten.
     private(set) var loadError: String?
+    /// The project selected in Settings, by name. Here so a project window can choose it.
+    var settingsSelection: String?
     /// The last failed action, shown in the UI.
     var error: String?
     /// Git status by project path. Missing = not a git repo, or not checked yet.

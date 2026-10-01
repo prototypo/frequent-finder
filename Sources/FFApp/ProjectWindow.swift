@@ -4,6 +4,7 @@ import SwiftUI
 struct ProjectWindow: View {
     let name: String
     @Environment(AppModel.self) private var model
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         if let project = model.project(named: name) {
@@ -60,6 +61,16 @@ struct ProjectWindow: View {
         }
         .formStyle(.grouped)
         .navigationTitle(p.name)
+        .toolbar {
+            Button {
+                model.settingsSelection = p.name
+                openWindow(id: "settings")
+            } label: {
+                Label("Edit Project…", systemImage: "pencil")
+            }
+            .help("Edit this project in Settings (⌘,)")
+            .keyboardShortcut(",")
+        }
     }
 }
 

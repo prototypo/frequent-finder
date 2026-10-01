@@ -6,8 +6,6 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @AppStorage(showInMenuBarKey) private var showInMenuBar = true
-    /// Selected project, by name, so it survives reordering.
-    @State private var selection: String?
     @State private var confirmingRemove = false
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
 
@@ -37,7 +35,7 @@ struct SettingsView: View {
             }
             HStack(alignment: .top) {
                 VStack(spacing: 0) {
-                    List(selection: $selection) {
+                    List(selection: selectionBinding) {
                         ForEach(model.config.projects, id: \.name) { Text($0.name).tag($0.name) }
                             .onMove { from, to in
                                 guard let i = from.first else { return }
@@ -59,7 +57,7 @@ struct SettingsView: View {
                 .frame(width: 200)
                 .border(.separator)
                 if let project = selected {
-                    ProjectEditor(project: project, selection: $selection).id(project.name)
+                    ProjectEditor(project: project, selection: selectionBinding).id(project.name)
                 } else {
                     Text("Select a project").foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -83,6 +81,16 @@ struct SettingsView: View {
         } message: { _ in
             Text("Its key files and links are removed from Frequent Finder. Nothing on disk is changed.")
         }
+    }
+
+    /// Selected project, by name, so it survives reordering.
+    private var selection: String? {
+        get { model.settingsSelection }
+        nonmutating set { model.settingsSelection = newValue }
+    }
+
+    private var selectionBinding: Binding<String?> {
+        Binding(get: { model.settingsSelection }, set: { model.settingsSelection = $0 })
     }
 
     private var selected: Project? {
