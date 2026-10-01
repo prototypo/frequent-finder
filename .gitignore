@@ -163,3 +163,7 @@ cython_debug/
 
 # QT Creator
 .qtcreator/
+
+# Swift
+.build/
+build/
