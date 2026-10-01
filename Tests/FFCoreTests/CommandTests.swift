@@ -120,3 +120,12 @@ private func fixture() throws -> String {
     try c.removeURL("p", url: "https://b.com")
     #expect(c.projects[0].urls == [ProjectURL(url: "file:///tmp/x")])
 }
+
+@Test func keyFilesMayBeFolders() throws {
+    let dir = try fixture()
+    var c = Config()
+    try c.add(path: "proj", cwd: dir)
+    try c.addFiles("proj", [dir + "/proj/docs", dir + "/proj/docs/spec.md"], cwd: "/")
+    #expect(c.projects[0].keyFiles == ["docs", "docs/spec.md"])
+    #expect(throws: FFError.fileOutsideProject(dir + "/proj")) { try c.addFiles("proj", [dir + "/proj"], cwd: "/") }
+}

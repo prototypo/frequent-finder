@@ -34,7 +34,7 @@ struct ProjectWindow: View {
                 }
             }
             if !p.keyFiles.isEmpty {
-                Section("Key Files") {
+                Section("Key Files and Folders") {
                     ForEach(p.keyFiles, id: \.self) { KeyFileRow(root: p.path, file: $0) }
                 }
             }
@@ -81,6 +81,7 @@ struct KeyFileRow: View {
         let full = (root as NSString).appendingPathComponent(file)
         let exists = FileManager.default.fileExists(atPath: full)
         HStack {
+            KeyFileIcon(path: full)
             Button(file) { model.attempt { try Launcher.open(full) } }
                 .buttonStyle(.link)
                 .disabled(!exists)
@@ -91,5 +92,19 @@ struct KeyFileRow: View {
                 .accessibilityLabel("Show \(file) in Finder")
                 .disabled(!exists)
         }
+    }
+}
+
+/// A folder or document symbol for a key file. Missing items show the document symbol.
+struct KeyFileIcon: View {
+    let path: String
+
+    var body: some View {
+        var isDir: ObjCBool = false
+        let folder = FileManager.default.fileExists(atPath: path, isDirectory: &isDir) && isDir.boolValue
+        return Image(systemName: folder ? "folder" : "doc")
+            .foregroundStyle(.secondary)
+            .frame(width: 16)
+            .accessibilityLabel(folder ? "Folder" : "File")
     }
 }

@@ -131,9 +131,10 @@ struct ProjectEditor: View {
                     Button("Choose…", action: choosePath)
                 }
             }
-            Section("Key Files") {
+            Section("Key Files and Folders") {
                 ForEach(project.keyFiles, id: \.self) { file in
                     HStack {
+                        KeyFileIcon(path: (project.path as NSString).appendingPathComponent(file))
                         Text(file)
                         Spacer()
                         iconButton("minus.circle", "Remove \(file)") {
@@ -141,7 +142,7 @@ struct ProjectEditor: View {
                         }
                     }
                 }
-                Button("Add Files…", action: addFiles)
+                Button("Add Files or Folders…", action: addFiles)
             }
             Section("Links") {
                 ForEach(Array(project.urls.enumerated()), id: \.offset) { i, link in
@@ -192,8 +193,9 @@ struct ProjectEditor: View {
     private func addFiles() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
-        panel.canChooseDirectories = false
+        panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
+        panel.message = "Choose files or folders inside the project. ⌘-click to choose several."
         panel.directoryURL = URL(fileURLWithPath: project.path)
         panel.prompt = "Add"
         guard panel.runModal() == .OK else { return }

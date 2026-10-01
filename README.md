@@ -57,7 +57,7 @@ The app reloads it when it changes.
 }
 ```
 
-`keyFiles` are relative to `path`. `label` is optional. `terminal` is `terminal` or `iterm`.
+`keyFiles` are files or folders, relative to `path`. `label` is optional. `terminal` is `terminal` or `iterm`.
 
 ## Development
 
