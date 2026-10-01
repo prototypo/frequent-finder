@@ -143,3 +143,10 @@ private func fixture() throws -> String {
     #expect(c.projects[0].keyFiles.isEmpty)
     #expect(throws: FFError.notInList(dir + "/outside.md")) { try c.removeFiles("proj", ["outside.md"], cwd: dir) }
 }
+
+@Test func keyFileDisplayNames() {
+    let p = Project(name: "p", path: "/code/p")
+    #expect(p.displayName(of: "docs/spec.md") == "docs/spec.md")
+    #expect(p.displayName(of: "/Users/me/Documents/Accounting2026") == "(external)/Accounting2026")
+    #expect(p.displayName(of: "/Users/me/Documents/Accounting2026/") == "(external)/Accounting2026")
+}

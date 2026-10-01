@@ -82,7 +82,8 @@ struct KeyFileRow: View {
         let exists = FileManager.default.fileExists(atPath: full)
         HStack {
             KeyFileIcon(path: full)
-            Button((file as NSString).abbreviatingWithTildeInPath) { model.attempt { try Launcher.open(full) } }
+            Button(project.displayName(of: file)) { model.attempt { try Launcher.open(full) } }
+                .help((full as NSString).abbreviatingWithTildeInPath)
                 .buttonStyle(.link)
                 .disabled(!exists)
             Spacer()

@@ -135,7 +135,8 @@ struct ProjectEditor: View {
                 ForEach(project.keyFiles, id: \.self) { file in
                     HStack {
                         KeyFileIcon(path: project.fullPath(of: file))
-                        Text((file as NSString).abbreviatingWithTildeInPath)
+                        Text(project.displayName(of: file))
+                            .help((project.fullPath(of: file) as NSString).abbreviatingWithTildeInPath)
                         Spacer()
                         iconButton("minus.circle", "Remove \(file)") {
                             model.update { try $0.removeFiles(project.name, [file], cwd: "/") }

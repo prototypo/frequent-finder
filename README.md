@@ -57,7 +57,7 @@ The app reloads it when it changes.
 }
 ```
 
-`keyFiles` are files or folders: relative to `path` when inside the project, else absolute. `label` is optional. `terminal` is `terminal` or `iterm`.
+`keyFiles` are files or folders: relative to `path` when inside the project, else absolute (shown as `(external)/<name>`). `label` is optional. `terminal` is `terminal` or `iterm`.
 
 ## Development
 

@@ -51,6 +51,11 @@ public struct Project: Codable, Hashable, Sendable {
         keyFile.hasPrefix("/") ? keyFile : (path as NSString).appendingPathComponent(keyFile)
     }
 
+    /// Short text for a key file: the stored path inside the project, `(external)/<name>` outside it.
+    public func displayName(of keyFile: String) -> String {
+        keyFile.hasPrefix("/") ? "(external)/" + (keyFile as NSString).lastPathComponent : keyFile
+    }
+
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         name = try c.decode(String.self, forKey: .name)
