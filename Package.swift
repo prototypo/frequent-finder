@@ -6,6 +6,7 @@ let package = Package(
     platforms: [.macOS(.v15)],
     targets: [
         .target(name: "FFCore"),
+        .executableTarget(name: "ff", dependencies: ["FFCore"]),
         .testTarget(name: "FFCoreTests", dependencies: ["FFCore"]),
     ],
     swiftLanguageModes: [.v5]
