@@ -55,13 +55,7 @@ struct ProjectWindow: View {
             }
             if !p.urls.isEmpty {
                 Section("Links") {
-                    ForEach(p.urls, id: \.url) { link in
-                        if let url = URL(string: link.url) {
-                            Link(link.title, destination: url)
-                        } else {
-                            Text(link.title).foregroundStyle(.secondary)
-                        }
-                    }
+                    ForEach(p.urls, id: \.url) { LinkRow(link: $0) }
                 }
             }
             if let error = model.error {
@@ -166,5 +160,18 @@ struct RepoRow: View {
         }
         .buttonStyle(.borderless)
         .disabled(!exists)
+    }
+}
+
+/// One project link: a clickable title, or plain secondary text when the URL is invalid.
+struct LinkRow: View {
+    let link: ProjectURL
+
+    var body: some View {
+        if let url = URL(string: link.url) {
+            Link(link.title, destination: url)
+        } else {
+            Text(link.title).foregroundStyle(.secondary)
+        }
     }
 }
