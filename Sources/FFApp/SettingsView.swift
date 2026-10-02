@@ -84,9 +84,9 @@ struct SettingsView: View {
             .onDeleteCommand { if selected != nil { confirmingRemove = true } }
             Divider()
             HStack(spacing: 0) {
-                listButton("plus", "Add Project…") { addProject() }
+                iconButton("plus", "Add Project…", size: CGSize(width: 24, height: 20)) { addProject() }
                 Divider().frame(height: 16)
-                listButton("minus", "Remove Project") { confirmingRemove = true }
+                iconButton("minus", "Remove Project", size: CGSize(width: 24, height: 20)) { confirmingRemove = true }
                     .disabled(selected == nil)
                 Spacer()
             }
@@ -121,14 +121,6 @@ struct SettingsView: View {
         guard let path = choosePaths(prompt: "Add Project").first else { return }
         model.update { try $0.add(path: path, cwd: "/") }
         if model.error == nil { selection = model.config.projects.last?.name }
-    }
-
-    /// The small +/− buttons under a list, as in System Settings.
-    private func listButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Image(systemName: symbol).frame(width: 24, height: 20) }
-            .buttonStyle(.borderless)
-            .help(label)
-            .accessibilityLabel(label)
     }
 }
 
@@ -328,9 +320,9 @@ private func choosePaths(prompt: String, files: Bool = false, multiple: Bool = f
     return panel.urls.map(\.path)
 }
 
-/// A borderless SF Symbol button with a tooltip and an accessibility label.
-private func iconButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
-    Button(action: action) { Image(systemName: symbol) }
+/// A borderless SF Symbol button with a tooltip and an accessibility label, optionally fixed to `size`.
+private func iconButton(_ symbol: String, _ label: String, size: CGSize? = nil, action: @escaping () -> Void) -> some View {
+    Button(action: action) { Image(systemName: symbol).frame(width: size?.width, height: size?.height) }
         .buttonStyle(.borderless)
         .help(label)
         .accessibilityLabel(label)
