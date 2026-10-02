@@ -155,67 +155,97 @@ struct ProjectEditor: View {
                     }
                 }
             }
-            Section("Key Files and Folders") {
-                ForEach(project.keyFiles, id: \.self) { file in
-                    HStack {
-                        KeyFileIcon(path: project.fullPath(of: file))
-                        Text(project.displayName(of: file))
-                            .help((project.fullPath(of: file) as NSString).abbreviatingWithTildeInPath)
-                        Spacer()
-                        iconButton("minus.circle", "Remove \(file)") {
-                            model.update { try $0.removeFiles(project.name, [file], cwd: "/") }
-                        }
-                    }
-                }
-                Button("Add Files or Folders…", action: addFiles)
-            }
-            Section("Git Repositories") {
-                ForEach(project.repos, id: \.self) { repo in
-                    HStack {
-                        Text(project.displayName(of: repo))
-                            .help((project.fullPath(of: repo) as NSString).abbreviatingWithTildeInPath)
-                        Spacer()
-                        iconButton("minus.circle", "Remove \(repo)") {
-                            model.update { try $0.removeRepos(project.name, [repo], cwd: "/") }
-                        }
-                    }
-                }
-                HStack {
-                    Button("Add Repositories…", action: addRepos)
-                    Button("Find Repositories", action: findRepos)
-                        .disabled(project.path == nil)
-                        .help("Adds every git repository up to 3 folder levels below the project.")
-                    if let findResult { Text(findResult).foregroundStyle(.secondary) }
-                }
-            }
-            Section("Links") {
-                ForEach(Array(project.urls.enumerated()), id: \.offset) { i, link in
-                    HStack {
-                        Text(link.title)
-                        if link.label != nil { Text(link.url).foregroundStyle(.secondary).lineLimit(1) }
-                        Spacer()
-                        iconButton("pencil", "Edit \(link.title)") {
-                            editing = i
-                            newURL = link.url
-                            newLabel = link.label ?? ""
-                        }
-                        iconButton("minus.circle", "Remove \(link.title)") {
-                            model.update { try $0.removeURL(project.name, url: link.url) }
-                            clearLink()
-                        }
-                    }
-                }
-                TextField("URL", text: $newURL)
-                TextField("Label (optional)", text: $newLabel)
-                HStack {
-                    Button(editing == nil ? "Add Link" : "Save Link", action: saveLink)
-                        .disabled(newURL.trimmingCharacters(in: .whitespaces).isEmpty)
-                    if editing != nil { Button("Cancel", action: clearLink) }
-                }
-            }
+            keyFilesSection
+            reposSection
+            linksSection
         }
         .formStyle(.grouped)
         .onAppear { name = project.name }
+    }
+
+    /// Lists the project's key files and folders with remove buttons and an add button.
+    private var keyFilesSection: some View {
+        Section("Key Files and Folders") {
+            ForEach(project.keyFiles, id: \.self) { file in
+                keyFileRow(file)
+            }
+            Button("Add Files or Folders…", action: addFiles)
+        }
+    }
+
+    /// Lists the project's git repositories with remove buttons, plus add and find controls.
+    private var reposSection: some View {
+        Section("Git Repositories") {
+            ForEach(project.repos, id: \.self) { repo in
+                repoRow(repo)
+            }
+            HStack {
+                Button("Add Repositories…", action: addRepos)
+                Button("Find Repositories", action: findRepos)
+                    .disabled(project.path == nil)
+                    .help("Adds every git repository up to 3 folder levels below the project.")
+                if let findResult { Text(findResult).foregroundStyle(.secondary) }
+            }
+        }
+    }
+
+    /// Lists the project's links with edit/remove buttons and the add/edit link form.
+    private var linksSection: some View {
+        Section("Links") {
+            ForEach(Array(project.urls.enumerated()), id: \.offset) { i, link in
+                linkRow(i, link)
+            }
+            TextField("URL", text: $newURL)
+            TextField("Label (optional)", text: $newLabel)
+            HStack {
+                Button(editing == nil ? "Add Link" : "Save Link", action: saveLink)
+                    .disabled(newURL.trimmingCharacters(in: .whitespaces).isEmpty)
+                if editing != nil { Button("Cancel", action: clearLink) }
+            }
+        }
+    }
+
+    /// One key file or folder: icon, name, and a remove button.
+    private func keyFileRow(_ file: String) -> some View {
+        HStack {
+            KeyFileIcon(path: project.fullPath(of: file))
+            Text(project.displayName(of: file))
+                .help((project.fullPath(of: file) as NSString).abbreviatingWithTildeInPath)
+            Spacer()
+            iconButton("minus.circle", "Remove \(file)") {
+                model.update { try $0.removeFiles(project.name, [file], cwd: "/") }
+            }
+        }
+    }
+
+    /// One git repository: name and a remove button.
+    private func repoRow(_ repo: String) -> some View {
+        HStack {
+            Text(project.displayName(of: repo))
+                .help((project.fullPath(of: repo) as NSString).abbreviatingWithTildeInPath)
+            Spacer()
+            iconButton("minus.circle", "Remove \(repo)") {
+                model.update { try $0.removeRepos(project.name, [repo], cwd: "/") }
+            }
+        }
+    }
+
+    /// One link: title, URL when labelled, and edit and remove buttons.
+    private func linkRow(_ i: Int, _ link: ProjectURL) -> some View {
+        HStack {
+            Text(link.title)
+            if link.label != nil { Text(link.url).foregroundStyle(.secondary).lineLimit(1) }
+            Spacer()
+            iconButton("pencil", "Edit \(link.title)") {
+                editing = i
+                newURL = link.url
+                newLabel = link.label ?? ""
+            }
+            iconButton("minus.circle", "Remove \(link.title)") {
+                model.update { try $0.removeURL(project.name, url: link.url) }
+                clearLink()
+            }
+        }
     }
 
     private func rename() {

@@ -39,15 +39,33 @@ public enum CLI {
         var output = ""
 
         switch command {
-        case "list":
-            try expect(a.isEmpty)
-            if json {
-                output = String(decoding: try config.jsonData(), as: UTF8.self)
-            } else if config.projects.isEmpty {
-                output = "No projects. Add one with: ff add <path>"
-            } else {
-                output = config.projects.map { "\($0.name)\t\($0.path ?? "(no folder)")" }.joined(separator: "\n")
-            }
+        case "list": output = try list(a, config: config, json: json)
+        case "set-path": try runSetPath(a, config: &config, noFolder: noFolder, cwd: cwd)
+        case "file": try runFile(a, config: &config, cwd: cwd)
+        case "repo": output = try runRepo(a, config: &config, cwd: cwd)
+        case "url": try runURL(a, config: &config, label: label)
+        case "terminal": output = try runTerminal(a, config: &config)
+        default: try runProject(command, a, config: &config, name: name, cwd: cwd)
+        }
+
+        if config != before { try store.save(config) }
+        return output
+    }
+
+    /// Formats the project list as JSON, tab-separated lines, or a hint when empty.
+    private static func list(_ a: [String], config: Config, json: Bool) throws -> String {
+        try expect(a.isEmpty)
+        if json {
+            return String(decoding: try config.jsonData(), as: UTF8.self)
+        } else if config.projects.isEmpty {
+            return "No projects. Add one with: ff add <path>"
+        }
+        return config.projects.map { "\($0.name)\t\($0.path ?? "(no folder)")" }.joined(separator: "\n")
+    }
+
+    /// Handles add, remove and rename; anything else is a usage error.
+    private static func runProject(_ command: String, _ a: [String], config: inout Config, name: String?, cwd: String) throws {
+        switch command {
         case "add":
             try expect(a.count == 1 || (a.isEmpty && name != nil))
             try config.add(path: a.first, name: name, cwd: cwd)
@@ -57,59 +75,70 @@ public enum CLI {
         case "rename":
             try expect(a.count == 2)
             try config.rename(a[0], to: a[1])
-        case "set-path":
-            if noFolder {
-                try expect(a.count == 1)
-                try config.clearPath(a[0])
-            } else {
-                try expect(a.count == 2)
-                try config.setPath(a[0], to: a[1], cwd: cwd)
-            }
-        case "file":
-            try expect(a.count >= 3)
-            let files = Array(a.dropFirst(2))
-            switch a[0] {
-            case "add": try config.addFiles(a[1], files, cwd: cwd)
-            case "remove": try config.removeFiles(a[1], files, cwd: cwd)
-            default: throw FFError.usage(usage)
-            }
-        case "repo":
-            try expect(a.count >= 2)
-            let paths = Array(a.dropFirst(2))
-            switch a[0] {
-            case "add":
-                try expect(!paths.isEmpty)
-                try config.addRepos(a[1], paths, cwd: cwd)
-            case "remove":
-                try expect(!paths.isEmpty)
-                try config.removeRepos(a[1], paths, cwd: cwd)
-            case "find":
-                try expect(paths.isEmpty)
-                let added = try config.findRepos(a[1])
-                output = "Added \(added) \(added == 1 ? "repository" : "repositories")."
-            default: throw FFError.usage(usage)
-            }
-        case "url":
-            try expect(a.count == 3)
-            switch a[0] {
-            case "add": try config.setURL(a[1], url: a[2], label: label)
-            case "remove": try config.removeURL(a[1], url: a[2])
-            default: throw FFError.usage(usage)
-            }
-        case "terminal":
-            try expect(a.count <= 1)
-            if let value = a.first {
-                guard let terminal = TerminalApp(rawValue: value.lowercased()) else { throw FFError.usage(usage) }
-                config.terminal = terminal
-            } else {
-                output = config.terminal.rawValue
-            }
         default:
             throw FFError.usage(usage)
         }
+    }
 
-        if config != before { try store.save(config) }
-        return output
+    /// Sets a project's folder, or clears it with --none.
+    private static func runSetPath(_ a: [String], config: inout Config, noFolder: Bool, cwd: String) throws {
+        if noFolder {
+            try expect(a.count == 1)
+            try config.clearPath(a[0])
+        } else {
+            try expect(a.count == 2)
+            try config.setPath(a[0], to: a[1], cwd: cwd)
+        }
+    }
+
+    /// Adds or removes a project's key files.
+    private static func runFile(_ a: [String], config: inout Config, cwd: String) throws {
+        try expect(a.count >= 3)
+        let files = Array(a.dropFirst(2))
+        switch a[0] {
+        case "add": try config.addFiles(a[1], files, cwd: cwd)
+        case "remove": try config.removeFiles(a[1], files, cwd: cwd)
+        default: throw FFError.usage(usage)
+        }
+    }
+
+    /// Adds, removes or finds a project's repositories; only find produces output.
+    private static func runRepo(_ a: [String], config: inout Config, cwd: String) throws -> String {
+        try expect(a.count >= 2)
+        let paths = Array(a.dropFirst(2))
+        switch a[0] {
+        case "add":
+            try expect(!paths.isEmpty)
+            try config.addRepos(a[1], paths, cwd: cwd)
+        case "remove":
+            try expect(!paths.isEmpty)
+            try config.removeRepos(a[1], paths, cwd: cwd)
+        case "find":
+            try expect(paths.isEmpty)
+            let added = try config.findRepos(a[1])
+            return "Added \(added) \(added == 1 ? "repository" : "repositories")."
+        default: throw FFError.usage(usage)
+        }
+        return ""
+    }
+
+    /// Adds or removes a project's link.
+    private static func runURL(_ a: [String], config: inout Config, label: String?) throws {
+        try expect(a.count == 3)
+        switch a[0] {
+        case "add": try config.setURL(a[1], url: a[2], label: label)
+        case "remove": try config.removeURL(a[1], url: a[2])
+        default: throw FFError.usage(usage)
+        }
+    }
+
+    /// Sets the terminal app, or returns the current one when no value is given.
+    private static func runTerminal(_ a: [String], config: inout Config) throws -> String {
+        try expect(a.count <= 1)
+        guard let value = a.first else { return config.terminal.rawValue }
+        guard let terminal = TerminalApp(rawValue: value.lowercased()) else { throw FFError.usage(usage) }
+        config.terminal = terminal
+        return ""
     }
 
     private static func expect(_ ok: Bool) throws {
