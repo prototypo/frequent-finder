@@ -3,6 +3,7 @@ import FFCore
 import ServiceManagement
 import SwiftUI
 
+/// The Settings window: general options and the list of projects with their editor.
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @AppStorage(showInMenuBarKey) private var showInMenuBar = true
@@ -135,6 +136,7 @@ struct SettingsView: View {
     }
 }
 
+/// The settings form for one project: name, folder, key files, repositories, and links.
 struct ProjectEditor: View {
     let project: Project
     @Binding var selection: String?
@@ -283,6 +285,7 @@ struct ProjectEditor: View {
         model.update { try $0.clearPath(project.name) }
     }
 
+    /// Lets the user pick git repository folders to add to the project.
     private func addRepos() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
@@ -303,6 +306,7 @@ struct ProjectEditor: View {
         }
     }
 
+    /// Lets the user pick files or folders to add as key files of the project.
     private func addFiles() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
