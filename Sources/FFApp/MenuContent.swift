@@ -13,21 +13,7 @@ struct MenuContent: View {
         } else if model.config.projects.isEmpty {
             Text("No Projects")
         } else {
-            ForEach(model.config.projects, id: \.name) { project in
-                if project.path.map({ FileManager.default.fileExists(atPath: $0) }) ?? true {
-                    let status = model.combinedGit(project)
-                    Button {
-                        openWindow(value: project.name)
-                        bringToFront { $0.title == project.name }
-                    } label: {
-                        Label(GitSymbol.menuTitle(project.name, status), systemImage: GitSymbol.name(for: status))
-                    }
-                    .accessibilityLabel("\(project.name), \(GitSymbol.description(for: status))")
-                } else {
-                    Button {} label: { Label("\(project.name) — Folder Not Found", systemImage: "questionmark.folder") }
-                        .disabled(true)
-                }
-            }
+            ForEach(model.config.projects, id: \.name) { ProjectMenuItem(project: $0) }
         }
         Divider()
         Button("Open All Projects") {
@@ -45,6 +31,29 @@ struct MenuContent: View {
         .keyboardShortcut(",")
         Button("Quit Frequent Finder") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
+    }
+}
+
+/// One project's menu item: opens its window, or a disabled item when its folder is missing.
+struct ProjectMenuItem: View {
+    let project: Project
+    @Environment(AppModel.self) private var model
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        if project.path.map({ FileManager.default.fileExists(atPath: $0) }) ?? true {
+            let status = model.combinedGit(project)
+            Button {
+                openWindow(value: project.name)
+                bringToFront { $0.title == project.name }
+            } label: {
+                Label(GitSymbol.menuTitle(project.name, status), systemImage: GitSymbol.name(for: status))
+            }
+            .accessibilityLabel("\(project.name), \(GitSymbol.description(for: status))")
+        } else {
+            Button {} label: { Label("\(project.name) — Folder Not Found", systemImage: "questionmark.folder") }
+                .disabled(true)
+        }
     }
 }
 
