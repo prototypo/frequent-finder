@@ -118,12 +118,8 @@ struct SettingsView: View {
     }
 
     private func addProject() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.prompt = "Add Project"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        model.update { try $0.add(path: url.path, cwd: "/") }
+        guard let path = choosePaths(prompt: "Add Project").first else { return }
+        model.update { try $0.add(path: path, cwd: "/") }
         if model.error == nil { selection = model.config.projects.last?.name }
     }
 
@@ -272,13 +268,8 @@ struct ProjectEditor: View {
     }
 
     private func choosePath() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.directoryURL = project.path.map { URL(fileURLWithPath: $0) }
-        panel.prompt = "Choose"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        model.update { try $0.setPath(project.name, to: url.path, cwd: "/") }
+        guard let path = choosePaths(prompt: "Choose", startAt: project.path).first else { return }
+        model.update { try $0.setPath(project.name, to: path, cwd: "/") }
     }
 
     private func clearPath() {
@@ -287,15 +278,10 @@ struct ProjectEditor: View {
 
     /// Lets the user pick git repository folders to add to the project.
     private func addRepos() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = true
-        panel.directoryURL = project.path.map { URL(fileURLWithPath: $0) }
-        panel.message = "Choose git repository folders. ⌘-click to choose several."
-        panel.prompt = "Add"
-        guard panel.runModal() == .OK else { return }
-        model.update { try $0.addRepos(project.name, panel.urls.map(\.path), cwd: "/") }
+        let paths = choosePaths(prompt: "Add", multiple: true, startAt: project.path,
+                                message: "Choose git repository folders. ⌘-click to choose several.")
+        guard !paths.isEmpty else { return }
+        model.update { try $0.addRepos(project.name, paths, cwd: "/") }
     }
 
     private func findRepos() {
@@ -308,15 +294,10 @@ struct ProjectEditor: View {
 
     /// Lets the user pick files or folders to add as key files of the project.
     private func addFiles() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = true
-        panel.message = "Choose files or folders. ⌘-click to choose several."
-        panel.directoryURL = project.path.map { URL(fileURLWithPath: $0) }
-        panel.prompt = "Add"
-        guard panel.runModal() == .OK else { return }
-        model.update { try $0.addFiles(project.name, panel.urls.map(\.path), cwd: "/") }
+        let paths = choosePaths(prompt: "Add", files: true, multiple: true, startAt: project.path,
+                                message: "Choose files or folders. ⌘-click to choose several.")
+        guard !paths.isEmpty else { return }
+        model.update { try $0.addFiles(project.name, paths, cwd: "/") }
     }
 
     private func saveLink() {
@@ -330,6 +311,21 @@ struct ProjectEditor: View {
         newURL = ""
         newLabel = ""
     }
+}
+
+/// Runs a folder-choosing open panel (files too if `files`) and returns the chosen paths, empty if cancelled.
+@MainActor
+private func choosePaths(prompt: String, files: Bool = false, multiple: Bool = false,
+                         startAt: String? = nil, message: String? = nil) -> [String] {
+    let panel = NSOpenPanel()
+    panel.canChooseDirectories = true
+    panel.canChooseFiles = files
+    panel.allowsMultipleSelection = multiple
+    panel.directoryURL = startAt.map { URL(fileURLWithPath: $0) }
+    if let message { panel.message = message }
+    panel.prompt = prompt
+    guard panel.runModal() == .OK else { return [] }
+    return panel.urls.map(\.path)
 }
 
 /// A borderless SF Symbol button with a tooltip and an accessibility label.
