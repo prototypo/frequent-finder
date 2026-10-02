@@ -1,6 +1,7 @@
 import FFCore
 import SwiftUI
 
+/// A window showing one project's folder, key files, repositories, and links.
 struct ProjectWindow: View {
     let name: String
     @Environment(AppModel.self) private var model
@@ -36,6 +37,7 @@ struct ProjectWindow: View {
         }
     }
 
+    /// The form for one project: folder, key files, repositories, and links.
     private func details(_ p: Project) -> some View {
         Form {
             if let path = p.path {
@@ -53,13 +55,7 @@ struct ProjectWindow: View {
             }
             if !p.urls.isEmpty {
                 Section("Links") {
-                    ForEach(p.urls, id: \.url) { link in
-                        if let url = URL(string: link.url) {
-                            Link(link.title, destination: url)
-                        } else {
-                            Text(link.title).foregroundStyle(.secondary)
-                        }
-                    }
+                    ForEach(p.urls, id: \.url) { LinkRow(link: $0) }
                 }
             }
             if let error = model.error {
@@ -95,6 +91,7 @@ struct GitLine: View {
     }
 }
 
+/// One key file or folder: opens it on click, or reveals it in Finder.
 struct KeyFileRow: View {
     let project: Project
     let file: String
@@ -163,5 +160,18 @@ struct RepoRow: View {
         }
         .buttonStyle(.borderless)
         .disabled(!exists)
+    }
+}
+
+/// One project link: a clickable title, or plain secondary text when the URL is invalid.
+struct LinkRow: View {
+    let link: ProjectURL
+
+    var body: some View {
+        if let url = URL(string: link.url) {
+            Link(link.title, destination: url)
+        } else {
+            Text(link.title).foregroundStyle(.secondary)
+        }
     }
 }

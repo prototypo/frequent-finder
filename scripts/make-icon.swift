@@ -3,25 +3,28 @@ import AppKit
 
 /// One square PNG on the macOS icon grid: a rounded 824/1024 body with the menu bar symbol on it.
 func render(_ px: Int) -> Data {
-    let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: px, pixelsHigh: px, bitsPerSample: 8,
+    guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: px, pixelsHigh: px, bitsPerSample: 8,
                                samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                               colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+                               colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { fatalError("could not create bitmap") }
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
     let s = CGFloat(px) / 1024
     let body = NSRect(x: 100 * s, y: 100 * s, width: 824 * s, height: 824 * s)
-    NSGradient(starting: NSColor(srgbRed: 0.30, green: 0.60, blue: 1.00, alpha: 1),
-               ending: NSColor(srgbRed: 0.08, green: 0.33, blue: 0.82, alpha: 1))!
-        .draw(in: NSBezierPath(roundedRect: body, xRadius: 185 * s, yRadius: 185 * s), angle: -90)
+    guard let gradient = NSGradient(starting: NSColor(srgbRed: 0.30, green: 0.60, blue: 1.00, alpha: 1),
+                                    ending: NSColor(srgbRed: 0.08, green: 0.33, blue: 0.82, alpha: 1))
+    else { fatalError("could not create gradient") }
+    gradient.draw(in: NSBezierPath(roundedRect: body, xRadius: 185 * s, yRadius: 185 * s), angle: -90)
     let config = NSImage.SymbolConfiguration(pointSize: 420 * s, weight: .medium)
         .applying(NSImage.SymbolConfiguration(paletteColors: [.white]))
-    let symbol = NSImage(systemSymbolName: "folder.badge.gearshape", accessibilityDescription: nil)!
-        .withSymbolConfiguration(config)!
+    guard let base = NSImage(systemSymbolName: "folder.badge.gearshape", accessibilityDescription: nil)
+    else { fatalError("missing SF Symbol folder.badge.gearshape") }
+    guard let symbol = base.withSymbolConfiguration(config) else { fatalError("could not apply symbol configuration") }
     let size = symbol.size
     symbol.draw(in: NSRect(x: (CGFloat(px) - size.width) / 2, y: (CGFloat(px) - size.height) / 2,
                            width: size.width, height: size.height))
     NSGraphicsContext.restoreGraphicsState()
-    return rep.representation(using: .png, properties: [:])!
+    guard let png = rep.representation(using: .png, properties: [:]) else { fatalError("could not encode PNG") }
+    return png
 }
 
 let iconset = URL(fileURLWithPath: "build/AppIcon.iconset")

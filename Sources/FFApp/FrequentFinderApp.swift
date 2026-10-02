@@ -5,6 +5,7 @@ import SwiftUI
 /// UserDefaults key for the "Show in menu bar" setting.
 let showInMenuBarKey = "showInMenuBar"
 
+/// The app entry point: menu bar menu, project windows, the All Projects window, and Settings.
 @main
 struct FrequentFinderApp: App {
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate

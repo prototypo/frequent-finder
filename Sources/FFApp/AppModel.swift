@@ -94,9 +94,17 @@ final class AppModel {
     // ponytail: display misses editors that write projects.json in place; harmless, since update() re-reads before saving.
     private func watch() {
         let dir = store.url.deletingLastPathComponent()
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        } catch {
+            self.error = "Cannot watch \(dir.path) for changes: \(error)"
+            return
+        }
         let fd = open(dir.path, O_EVTONLY)
-        guard fd >= 0 else { return }
+        guard fd >= 0 else {
+            error = "Cannot watch \(dir.path) for changes: \(String(cString: strerror(errno)))"
+            return
+        }
         let source = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: .write, queue: .main)
         source.setEventHandler { [weak self] in
             MainActor.assumeIsolated { self?.reload() }
