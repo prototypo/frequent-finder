@@ -154,23 +154,28 @@ struct ProjectEditor: View {
                 .focused($nameFocused)
                 .onSubmit(rename)
                 .onChange(of: nameFocused) { _, focused in if !focused { rename() } }
-            LabeledContent("Path") {
-                HStack {
-                    Text(project.path ?? "No folder").lineLimit(1).truncationMode(.middle)
-                        .foregroundStyle(project.path == nil ? .secondary : .primary)
-                    Button("Choose…", action: choosePath)
-                    if project.path != nil {
-                        Button("Clear") { model.update { try $0.clearPath(project.name) } }
-                            .help("Make this a project with no folder. Its files and repos stay listed.")
-                    }
-                }
-            }
+            pathRow
             keyFilesSection
             reposSection
             linksSection
         }
         .formStyle(.grouped)
         .onAppear { name = project.name }
+    }
+
+    /// The project's folder path with Choose and Clear buttons.
+    private var pathRow: some View {
+        LabeledContent("Path") {
+            HStack {
+                Text(project.path ?? "No folder").lineLimit(1).truncationMode(.middle)
+                    .foregroundStyle(project.path == nil ? .secondary : .primary)
+                Button("Choose…", action: choosePath)
+                if project.path != nil {
+                    Button("Clear", action: clearPath)
+                        .help("Make this a project with no folder. Its files and repos stay listed.")
+                }
+            }
+        }
     }
 
     /// Lists the project's key files and folders with remove buttons and an add button.
@@ -272,6 +277,10 @@ struct ProjectEditor: View {
         panel.prompt = "Choose"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         model.update { try $0.setPath(project.name, to: url.path, cwd: "/") }
+    }
+
+    private func clearPath() {
+        model.update { try $0.clearPath(project.name) }
     }
 
     private func addRepos() {
