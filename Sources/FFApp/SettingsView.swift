@@ -14,48 +14,9 @@ struct SettingsView: View {
             if let loadError = model.loadError {
                 Text(loadError).foregroundStyle(.red)
             }
-            Form {
-                Picker("Terminal", selection: Binding(
-                    get: { model.config.terminal },
-                    set: { terminal in model.update { $0.terminal = terminal } }
-                )) {
-                    ForEach(TerminalApp.allCases, id: \.self) { Text($0.displayName).tag($0) }
-                }
-                Toggle("Show in menu bar", isOn: $showInMenuBar)
-                    .help("When hidden, open Frequent Finder again from Finder or Spotlight to show it.")
-                Toggle("Open at login", isOn: Binding(
-                    get: { openAtLogin },
-                    set: { on in
-                        model.attempt {
-                            if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
-                        }
-                        openAtLogin = SMAppService.mainApp.status == .enabled
-                    }
-                ))
-            }
+            generalSettings
             HStack(alignment: .top) {
-                VStack(spacing: 0) {
-                    List(selection: selectionBinding) {
-                        ForEach(model.config.projects, id: \.name) { Text($0.name).tag($0.name) }
-                            .onMove { from, to in
-                                guard let i = from.first else { return }
-                                let name = model.config.projects[i].name
-                                model.update { try $0.move(name, to: to) }
-                            }
-                    }
-                    .onDeleteCommand { if selected != nil { confirmingRemove = true } }
-                    Divider()
-                    HStack(spacing: 0) {
-                        listButton("plus", "Add Project…") { addProject() }
-                        Divider().frame(height: 16)
-                        listButton("minus", "Remove Project") { confirmingRemove = true }
-                            .disabled(selected == nil)
-                        Spacer()
-                    }
-                    .padding(2)
-                }
-                .frame(width: 200)
-                .border(.separator)
+                projectList
                 if let project = selected {
                     ProjectEditor(project: project, selection: selectionBinding).id(project.name)
                 } else {
@@ -83,6 +44,55 @@ struct SettingsView: View {
         } message: { _ in
             Text("Its key files and links are removed from Frequent Finder. Nothing on disk is changed.")
         }
+    }
+
+    /// Terminal choice, menu bar visibility, and open-at-login settings.
+    private var generalSettings: some View {
+        Form {
+            Picker("Terminal", selection: Binding(
+                get: { model.config.terminal },
+                set: { terminal in model.update { $0.terminal = terminal } }
+            )) {
+                ForEach(TerminalApp.allCases, id: \.self) { Text($0.displayName).tag($0) }
+            }
+            Toggle("Show in menu bar", isOn: $showInMenuBar)
+                .help("When hidden, open Frequent Finder again from Finder or Spotlight to show it.")
+            Toggle("Open at login", isOn: Binding(
+                get: { openAtLogin },
+                set: { on in
+                    model.attempt {
+                        if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+                    }
+                    openAtLogin = SMAppService.mainApp.status == .enabled
+                }
+            ))
+        }
+    }
+
+    /// The project list with reorder and delete support, and the add/remove button bar.
+    private var projectList: some View {
+        VStack(spacing: 0) {
+            List(selection: selectionBinding) {
+                ForEach(model.config.projects, id: \.name) { Text($0.name).tag($0.name) }
+                    .onMove { from, to in
+                        guard let i = from.first else { return }
+                        let name = model.config.projects[i].name
+                        model.update { try $0.move(name, to: to) }
+                    }
+            }
+            .onDeleteCommand { if selected != nil { confirmingRemove = true } }
+            Divider()
+            HStack(spacing: 0) {
+                listButton("plus", "Add Project…") { addProject() }
+                Divider().frame(height: 16)
+                listButton("minus", "Remove Project") { confirmingRemove = true }
+                    .disabled(selected == nil)
+                Spacer()
+            }
+            .padding(2)
+        }
+        .frame(width: 200)
+        .border(.separator)
     }
 
     /// Selected project, by name, so it survives reordering.
