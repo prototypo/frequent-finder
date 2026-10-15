@@ -14,6 +14,8 @@ A macOS menu bar utility to keep track of current projects and their files.
   and reopens at launch if it was open when the app quit.
 - Settings… (⌘,) edits projects, the terminal choice, Show in menu bar, and Open at login.
   If you hide the menu bar icon, open the app again from Finder or Spotlight to bring it back.
+- Mark a project inactive (Settings → Active, or `ff deactivate`) to hide it from the menu and
+  All Projects. Settings lists inactive projects in a collapsible group so you can turn them back on.
 - The `ff` command does the same from the command line.
 
 ## Build and install
