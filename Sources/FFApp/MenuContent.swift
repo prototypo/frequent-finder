@@ -10,10 +10,10 @@ struct MenuContent: View {
     var body: some View {
         if model.loadError != nil {
             Text("Config File Has an Error — See Settings")
-        } else if model.config.projects.isEmpty {
+        } else if model.activeProjects.isEmpty {
             Text("No Projects")
         } else {
-            ForEach(model.config.projects, id: \.name) { ProjectMenuItem(project: $0) }
+            ForEach(model.activeProjects, id: \.name) { ProjectMenuItem(project: $0) }
         }
         Divider()
         Button("Open All Projects") {

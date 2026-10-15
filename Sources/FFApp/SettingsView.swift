@@ -8,6 +8,7 @@ struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @AppStorage(showInMenuBarKey) private var showInMenuBar = true
     @State private var confirmingRemove = false
+    @State private var showInactive = false
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
 
     var body: some View {
@@ -70,16 +71,26 @@ struct SettingsView: View {
         }
     }
 
-    /// The project list with reorder and delete support, and the add/remove button bar.
+    /// The project list with reorder and delete support, a collapsible list of inactive
+    /// projects, and the add/remove button bar.
     private var projectList: some View {
         VStack(spacing: 0) {
             List(selection: selectionBinding) {
-                ForEach(model.config.projects, id: \.name) { Text($0.name).tag($0.name) }
+                ForEach(model.activeProjects, id: \.name) { Text($0.name).tag($0.name) }
                     .onMove { from, to in
-                        guard let i = from.first else { return }
-                        let name = model.config.projects[i].name
-                        model.update { try $0.move(name, to: to) }
+                        // Indices count active projects only; move() counts them all.
+                        let active = model.activeProjects
+                        guard let i = from.first, let last = active.last else { return }
+                        let all = model.config.projects.map(\.name)
+                        let dest = to < active.count ? all.firstIndex(of: active[to].name)! : all.firstIndex(of: last.name)! + 1
+                        model.update { try $0.move(active[i].name, to: dest) }
                     }
+                let inactive = model.config.projects.filter { !$0.active }
+                if !inactive.isEmpty {
+                    DisclosureGroup("Inactive (\(inactive.count))", isExpanded: $showInactive) {
+                        ForEach(inactive, id: \.name) { Text($0.name).foregroundStyle(.secondary).tag($0.name) }
+                    }
+                }
             }
             .onDeleteCommand { if selected != nil { confirmingRemove = true } }
             Divider()
@@ -145,6 +156,11 @@ struct ProjectEditor: View {
                 .onSubmit(rename)
                 .onChange(of: nameFocused) { _, focused in if !focused { rename() } }
             pathRow
+            Toggle("Active", isOn: Binding(
+                get: { project.active },
+                set: { on in model.update { try $0.setActive(project.name, on) } }
+            ))
+            .help("Inactive projects are hidden from the menu and All Projects.")
             keyFilesSection
             reposSection
             linksSection

@@ -100,3 +100,13 @@ private struct Env {
     #expect(try env.ff("list") == "Pair\t(no folder)\nQ\t(no folder)")
     #expect(throws: FFError.noFolder("Pair")) { try env.ff("repo", "find", "Pair") }
 }
+
+@Test func activateAndDeactivate() throws {
+    let env = try Env()
+    try env.ff("add", ".", "--name", "P")
+    #expect(try env.ff("list") == "P\t\(env.dir)")
+    try env.ff("deactivate", "p")
+    #expect(try env.ff("list") == "P\t\(env.dir)\t(inactive)")
+    try env.ff("activate", "P")
+    #expect(try env.store.load().projects[0].active)
+}
