@@ -50,6 +50,9 @@ final class AppModel {
         GitStatus.combine([p.path.flatMap { git[$0] }] + p.repos.map { git[p.fullPath(of: $0)] })
     }
 
+    /// The projects shown in the menu and the All Projects window.
+    var activeProjects: [Project] { config.projects.filter(\.active) }
+
     func project(named name: String) -> Project? {
         (try? config.index(of: name)).map { config.projects[$0] }
     }

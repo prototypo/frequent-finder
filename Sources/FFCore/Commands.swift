@@ -59,6 +59,10 @@ extension Config {
         projects[i].name = newName
     }
 
+    public mutating func setActive(_ name: String, _ active: Bool) throws {
+        projects[try index(of: name)].active = active
+    }
+
     public mutating func setPath(_ name: String, to path: String, cwd: String) throws {
         let i = try index(of: name)
         projects[i].path = try Self.directory(path, cwd: cwd)

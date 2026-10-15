@@ -8,6 +8,8 @@ public enum CLI {
       ff add --name "Name"                  add a project with no folder (only repos, files, links)
       ff remove <name>
       ff rename <name> <new-name>
+      ff activate <name>                    show the project in the menu again (the default)
+      ff deactivate <name>                  hide the project from the menu
       ff set-path <name> <path>
       ff set-path <name> --none             remove the project's folder
       ff file add <name> <file>...          add key files or folders (any location)
@@ -60,10 +62,11 @@ public enum CLI {
         } else if config.projects.isEmpty {
             return "No projects. Add one with: ff add <path>"
         }
-        return config.projects.map { "\($0.name)\t\($0.path ?? "(no folder)")" }.joined(separator: "\n")
+        return config.projects.map { "\($0.name)\t\($0.path ?? "(no folder)")\($0.active ? "" : "\t(inactive)")" }
+            .joined(separator: "\n")
     }
 
-    /// Handles add, remove and rename; anything else is a usage error.
+    /// Handles add, remove, rename, activate and deactivate; anything else is a usage error.
     private static func runProject(_ command: String, _ a: [String], config: inout Config, name: String?, cwd: String) throws {
         switch command {
         case "add":
@@ -75,6 +78,9 @@ public enum CLI {
         case "rename":
             try expect(a.count == 2)
             try config.rename(a[0], to: a[1])
+        case "activate", "deactivate":
+            try expect(a.count == 1)
+            try config.setActive(a[0], command == "activate")
         default:
             throw FFError.usage(usage)
         }

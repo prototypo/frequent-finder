@@ -13,7 +13,7 @@ struct AllProjectsView: View {
     var body: some View {
         NavigationSplitView {
             List(selection: $selection) {
-                ForEach(model.config.projects, id: \.name) { project in
+                ForEach(model.activeProjects, id: \.name) { project in
                     let status = model.combinedGit(project)
                     Label {
                         Text(GitSymbol.menuTitle(project.name, status))

@@ -41,13 +41,17 @@ public struct Project: Codable, Hashable, Sendable {
     public var urls: [ProjectURL]
     /// Git repositories shown with their own status. Stored like `keyFiles`.
     public var repos: [String]
+    /// Inactive projects are hidden from the menu and the All Projects window.
+    public var active: Bool
 
-    public init(name: String, path: String?, keyFiles: [String] = [], urls: [ProjectURL] = [], repos: [String] = []) {
+    public init(name: String, path: String?, keyFiles: [String] = [], urls: [ProjectURL] = [], repos: [String] = [],
+                active: Bool = true) {
         self.name = name
         self.path = path
         self.keyFiles = keyFiles
         self.urls = urls
         self.repos = repos
+        self.active = active
     }
 
     /// The full path of a stored key file or repo.
@@ -71,6 +75,7 @@ public struct Project: Codable, Hashable, Sendable {
         keyFiles = try c.decodeIfPresent([String].self, forKey: .keyFiles) ?? []
         urls = try c.decodeIfPresent([ProjectURL].self, forKey: .urls) ?? []
         repos = try c.decodeIfPresent([String].self, forKey: .repos) ?? []
+        active = try c.decodeIfPresent(Bool.self, forKey: .active) ?? true
     }
 }
 
