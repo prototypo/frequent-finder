@@ -18,6 +18,12 @@ A macOS menu bar utility to keep track of current projects and their files.
   All Projects. Settings lists inactive projects in a collapsible group so you can turn them back on.
 - The `ff` command does the same from the command line.
 
+| Menu | Project window |
+| --- | --- |
+| ![The menu bar menu, listing projects with their git status](docs/images/menu.png) | ![A project window with its folder, git status, key files and links](docs/images/project-window.png) |
+
+![The All Projects window: projects on the left, the selected one's details on the right](docs/images/all-projects.png)
+
 ## Build and install
 
 Needs macOS 15 or later and Xcode (or the Swift toolchain).
@@ -32,23 +38,28 @@ Make sure `~/.local/bin` is on your `PATH`.
 ## Command line
 
 ```
-ff list [--json]
-ff add <path> [--name "Name"]
-ff add --name "Name"               # project with no folder
-ff remove <name>
-ff rename <name> <new-name>
-ff activate <name>
-ff deactivate <name>               # hide from the menu and All Projects (Settings still lists it)
-ff set-path <name> <path>
-ff set-path <name> --none          # project with no folder (only repos, files, links)
-ff file add <name> <file>...
-ff file remove <name> <file>...
-ff repo add <name> <path>...
-ff repo remove <name> <path>...
-ff repo find <name>
-ff url add <name> <url> [--label "Label"]
-ff url remove <name> <url>
-ff terminal [terminal|iterm]
+$ ff help
+usage:
+  ff list [--json]                      show all projects
+  ff add <path> [--name "Name"]         add a project (name defaults to the folder name)
+  ff add --name "Name"                  add a project with no folder (only repos, files, links)
+  ff remove <name>
+  ff rename <name> <new-name>
+  ff activate <name>                    show the project in the menu again (the default)
+  ff deactivate <name>                  hide the project from the menu
+  ff set-path <name> <path>
+  ff set-path <name> --none             remove the project's folder
+  ff file add <name> <file>...          add key files or folders (any location)
+  ff file remove <name> <file>...
+  ff repo add <name> <path>...          add git repositories with their own status
+  ff repo remove <name> <path>...
+  ff repo find <name>                   add every repository up to 3 levels below the project
+  ff url add <name> <url> [--label "Label"]
+  ff url remove <name> <url>
+  ff terminal [terminal|iterm]          show or set the terminal app
+  ff help
+
+Config file: ~/.config/frequent-finder/projects.json (override with FF_CONFIG)
 ```
 
 Project names are not case-sensitive. Errors exit with code 1, usage errors with code 2.
