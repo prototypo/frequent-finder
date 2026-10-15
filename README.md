@@ -6,7 +6,7 @@ Macs are much better at giving you the tools to manage information overload, or 
 
 - Seeing git status at a glance
 - A one-click place to open a Finder or terminal in the project directory
-- A single project-context place to list relevant URLS, etc
+- A single project-context place to list relevant files, folders, repos, URLs, etc
 - A CLI to drive the GUI, including marking projects active or inactive.
 - Mark a project as "active" or "inactive". Inactive projects are hidden.
 
