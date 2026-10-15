@@ -94,4 +94,3 @@ swift test
 swift scripts/make-icon.swift   # redraws Resources/AppIcon.icns
 ```
 
-The old Python/Qt attempt is in `old-python/` and is not used.
