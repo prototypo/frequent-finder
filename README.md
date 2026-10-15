@@ -2,6 +2,16 @@
 
 A macOS menu bar utility to keep track of current projects and their files.
 
+Macs are much better at giving you the tools to manage information overload, or maybe I am just more familiar with the options. However, for years I have wanted a better way to cut through the noise of many concurrent projects, with many files, that are scattered across many file trees, repos, websites, etc. I have wanted a way to easily track my current projects including:
+
+- Seeing git status at a glance
+- A one-click place to open a Finder or terminal in the project directory
+- A single project-context place to list relevant URLS, etc
+- A CLI to drive the GUI, including marking projects active or inactive.
+- Mark a project as "active" or "inactive". Inactive projects are hidden.
+
+## How to use the GUI
+
 - Click the menu bar icon to see your projects, each with a git status symbol
   (✓ clean, ✎ dirty, dashed circle = not a git repo), plus ↑N commits to push and
   ↓N to pull (as of the last `git fetch`).
