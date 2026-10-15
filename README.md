@@ -1,6 +1,6 @@
 # frequent-finder
 
-A macOS menu bar utility to keep track of current projects and their files.
+A macOS utility to keep track of current projects and their files. It lives in your menu bar and optionally opens windows.
 
 Macs are much better at giving you the tools to manage information overload, or maybe I am just more familiar with the options. However, for years I have wanted a better way to cut through the noise of many concurrent projects, with many files, that are scattered across many file trees, repos, websites, etc. I have wanted a way to easily track my current projects including:
 
