@@ -39,6 +39,21 @@ struct ProjectWindow: View {
 
     /// The form for one project: folder, key files, repositories, links, and notes.
     private func details(_ p: Project) -> some View {
+        WithNotes(project: p) { form(p) }
+        .navigationTitle(p.name)
+        .toolbar {
+            Button {
+                model.settingsSelection = p.name
+                openWindow(id: "settings")
+            } label: {
+                Label("Project Settings…", systemImage: "gearshape")
+            }
+            .help("Open Settings for this project (⌘,)")
+            .keyboardShortcut(",")
+        }
+    }
+
+    private func form(_ p: Project) -> some View {
         Form {
             if let path = p.path {
                 folderSection(path)
@@ -58,41 +73,109 @@ struct ProjectWindow: View {
                     ForEach(p.urls, id: \.url) { LinkRow(link: $0) }
                 }
             }
-            NotesEditor(project: p)
             if let error = model.error {
                 Text(error).foregroundStyle(.red)
             }
         }
         .formStyle(.grouped)
-        .navigationTitle(p.name)
-        .toolbar {
-            Button {
-                model.settingsSelection = p.name
-                openWindow(id: "settings")
-            } label: {
-                Label("Project Settings…", systemImage: "gearshape")
-            }
-            .help("Open Settings for this project (⌘,)")
-            .keyboardShortcut(",")
+    }
+}
+
+/// A form on top and the project's notes filling the space below it. The form shrinks to fit
+/// its rows, and scrolls when they need more room than the notes leave.
+struct WithNotes<Content: View>: View {
+    let project: Project
+    @ViewBuilder let content: Content
+    /// Height of the form's rows; nil until measured.
+    @State private var formHeight: CGFloat?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            content
+                .onScrollGeometryChange(for: CGFloat.self) { g in
+                    g.contentSize.height + g.contentInsets.top + g.contentInsets.bottom
+                } action: { _, height in formHeight = height }
+                .frame(maxHeight: formHeight)
+                .layoutPriority(1)
+            Divider()
+            NotesEditor(project: project)
         }
     }
 }
 
-/// An editable Notes section. Every change is saved at once.
+/// The project's notes, shown as basic Markdown, with an Edit button to type them as plain text.
+/// Every change is saved at once.
 struct NotesEditor: View {
     let project: Project
     @Environment(AppModel.self) private var model
     @State private var notes = ""
+    @State private var editing = false
+    @FocusState private var focused: Bool
 
     var body: some View {
-        Section("Notes") {
-            TextEditor(text: $notes)
-                .frame(minHeight: 80)
-                .onChange(of: notes) { _, text in
-                    if text != (project.notes ?? "") { model.update { try $0.setNotes(project.name, text) } }
+        VStack(alignment: .leading) {
+            HStack {
+                Text("Notes").font(.headline)
+                Spacer()
+                Button(editing ? "Done" : "Edit") {
+                    editing.toggle()
+                    focused = editing
                 }
+            }
+            if editing {
+                TextEditor(text: $notes)
+                    .focused($focused)
+                    .onChange(of: notes) { _, text in
+                        if text != (project.notes ?? "") { model.update { try $0.setNotes(project.name, text) } }
+                    }
+            } else if notes.isEmpty {
+                Text("No notes. Click Edit to add some; Markdown is supported.").foregroundStyle(.secondary)
+                Spacer()
+            } else {
+                ScrollView { MarkdownText(text: notes).frame(maxWidth: .infinity, alignment: .leading) }
+            }
         }
-        .onAppear { notes = project.notes ?? "" }
+        .padding()
+        .frame(maxWidth: .infinity, minHeight: 120, maxHeight: .infinity, alignment: .topLeading)
+        .onAppear {
+            notes = project.notes ?? ""
+            editing = notes.isEmpty
+        }
+    }
+}
+
+/// Text shown as basic Markdown: headings, lists, and inline styles and links.
+struct MarkdownText: View {
+    let text: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(Array(text.components(separatedBy: "\n").enumerated()), id: \.offset) { _, line in
+                row(NoteLine(line))
+            }
+        }
+        .textSelection(.enabled)
+    }
+
+    @ViewBuilder private func row(_ line: NoteLine) -> some View {
+        switch line {
+        case .heading(let level, let text):
+            Text(inline(text)).font(level == 1 ? .title2 : level == 2 ? .title3 : .headline)
+        case .item(let indent, let marker, let text):
+            HStack(alignment: .firstTextBaseline) {
+                Text(marker)
+                Text(inline(text))
+            }
+            .padding(.leading, CGFloat(indent) * 16)
+        case .text(let text):
+            Text(inline(text.isEmpty ? " " : text))
+        }
+    }
+
+    /// Bold, italic, code and links; the text unchanged if it is not valid Markdown.
+    private func inline(_ text: String) -> AttributedString {
+        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
+            ?? AttributedString(text)
     }
 }
 

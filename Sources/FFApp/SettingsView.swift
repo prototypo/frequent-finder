@@ -154,6 +154,17 @@ struct ProjectEditor: View {
     @State private var dropTargeted = false
 
     var body: some View {
+        WithNotes(project: project) { form }
+        .onAppear { name = project.name }
+        .dropDestination(for: URL.self, action: drop) { dropTargeted = $0 }
+        .overlay {
+            if dropTargeted {
+                RoundedRectangle(cornerRadius: 8).stroke(Color.accentColor, lineWidth: 3).allowsHitTesting(false)
+            }
+        }
+    }
+
+    private var form: some View {
         Form {
             TextField("Name", text: $name)
                 .focused($nameFocused)
@@ -168,16 +179,8 @@ struct ProjectEditor: View {
             keyFilesSection
             reposSection
             linksSection
-            NotesEditor(project: project)
         }
         .formStyle(.grouped)
-        .onAppear { name = project.name }
-        .dropDestination(for: URL.self, action: drop) { dropTargeted = $0 }
-        .overlay {
-            if dropTargeted {
-                RoundedRectangle(cornerRadius: 8).stroke(Color.accentColor, lineWidth: 3).allowsHitTesting(false)
-            }
-        }
     }
 
 

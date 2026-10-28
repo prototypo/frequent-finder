@@ -27,8 +27,9 @@ Macs are much better at giving you the tools to manage information overload, or 
 - Mark a project inactive (Settings → Active, or `ff deactivate`) to hide it from the menu and
   All Projects. Settings lists inactive projects in a collapsible group so you can turn them back on.
 - In Settings, drag files, folders, or web links (from a browser's address bar) onto a project
-  to add them. A folder with a `.git` inside is added as a git repository. Each project has a Notes box
-  for free text at the bottom of its window and its settings; changes are saved as you type.
+  to add them. A folder with a `.git` inside is added as a git repository. Each project has Notes
+  filling the bottom of its window and its settings. They show basic Markdown (headings, lists,
+  bold, italic, code, links); click Edit to type. Changes are saved as you type.
 - The `ff` command does the same from the command line.
 
 | Menu | Project window |
