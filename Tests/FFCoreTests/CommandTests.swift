@@ -218,3 +218,14 @@ private func makeRepos(_ root: String, _ paths: [String]) throws {
     #expect(c.projects[0].notes == nil)
     #expect(throws: FFError.self) { try c.setNotes("Z", "x") }
 }
+
+@Test func noteLinesParseBasicMarkdown() {
+    #expect(NoteLine("# Plan") == .heading(level: 1, text: "Plan"))
+    #expect(NoteLine("### Later") == .heading(level: 3, text: "Later"))
+    #expect(NoteLine("- Ship **it**") == .item(indent: 0, marker: "•", text: "Ship **it**"))
+    #expect(NoteLine("    * nested") == .item(indent: 2, marker: "•", text: "nested"))
+    #expect(NoteLine("12. Twelfth") == .item(indent: 0, marker: "12.", text: "Twelfth"))
+    #expect(NoteLine("**bold** start") == .text("**bold** start"))
+    #expect(NoteLine("#hashtag") == .text("#hashtag"))
+    #expect(NoteLine("") == .text(""))
+}
