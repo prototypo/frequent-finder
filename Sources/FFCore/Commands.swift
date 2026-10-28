@@ -63,6 +63,11 @@ extension Config {
         projects[try index(of: name)].active = active
     }
 
+    /// Blank notes are stored as nil.
+    public mutating func setNotes(_ name: String, _ notes: String) throws {
+        projects[try index(of: name)].notes = notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : notes
+    }
+
     public mutating func setPath(_ name: String, to path: String, cwd: String) throws {
         let i = try index(of: name)
         projects[i].path = try Self.directory(path, cwd: cwd)

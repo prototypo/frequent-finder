@@ -37,7 +37,7 @@ struct ProjectWindow: View {
         }
     }
 
-    /// The form for one project: folder, key files, repositories, and links.
+    /// The form for one project: folder, key files, repositories, links, and notes.
     private func details(_ p: Project) -> some View {
         Form {
             if let path = p.path {
@@ -58,6 +58,7 @@ struct ProjectWindow: View {
                     ForEach(p.urls, id: \.url) { LinkRow(link: $0) }
                 }
             }
+            NotesEditor(project: p)
             if let error = model.error {
                 Text(error).foregroundStyle(.red)
             }
@@ -74,6 +75,24 @@ struct ProjectWindow: View {
             .help("Open Settings for this project (⌘,)")
             .keyboardShortcut(",")
         }
+    }
+}
+
+/// An editable Notes section. Every change is saved at once.
+struct NotesEditor: View {
+    let project: Project
+    @Environment(AppModel.self) private var model
+    @State private var notes = ""
+
+    var body: some View {
+        Section("Notes") {
+            TextEditor(text: $notes)
+                .frame(minHeight: 80)
+                .onChange(of: notes) { _, text in
+                    if text != (project.notes ?? "") { model.update { try $0.setNotes(project.name, text) } }
+                }
+        }
+        .onAppear { notes = project.notes ?? "" }
     }
 }
 

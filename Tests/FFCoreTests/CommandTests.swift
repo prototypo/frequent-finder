@@ -209,3 +209,12 @@ private func makeRepos(_ root: String, _ paths: [String]) throws {
     #expect(c.projects[0].keyFiles == [dir + "/proj/docs/spec.md"])
     #expect(c.projects[0].repos == [dir + "/proj/a"])
 }
+
+@Test func notesSetAndBlankCleared() throws {
+    var c = Config(projects: [Project(name: "A", path: nil)])
+    try c.setNotes("a", "Call Bob\nabout the API")
+    #expect(c.projects[0].notes == "Call Bob\nabout the API")
+    try c.setNotes("A", "  \n")
+    #expect(c.projects[0].notes == nil)
+    #expect(throws: FFError.self) { try c.setNotes("Z", "x") }
+}

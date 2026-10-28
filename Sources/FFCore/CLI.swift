@@ -19,6 +19,9 @@ public enum CLI {
       ff repo find <name>                   add every repository up to 3 levels below the project
       ff url add <name> <url> [--label "Label"]
       ff url remove <name> <url>
+      ff notes <name>                       show the project's notes
+      ff notes <name> "text"                replace the project's notes
+      ff notes <name> --none                remove the project's notes
       ff terminal [terminal|iterm]          show or set the terminal app
       ff help
 
@@ -29,7 +32,7 @@ public enum CLI {
     public static func run(_ argv: [String], store: ConfigStore, cwd: String) throws -> String {
         var args = argv
         let json = takeFlag("--json", from: &args)
-        let noFolder = takeFlag("--none", from: &args)
+        let none = takeFlag("--none", from: &args)
         let name = try takeOption("--name", from: &args)
         let label = try takeOption("--label", from: &args)
         guard let command = args.first else { throw FFError.usage(usage) }
@@ -42,10 +45,11 @@ public enum CLI {
 
         switch command {
         case "list": output = try list(a, config: config, json: json)
-        case "set-path": try runSetPath(a, config: &config, noFolder: noFolder, cwd: cwd)
+        case "set-path": try runSetPath(a, config: &config, noFolder: none, cwd: cwd)
         case "file": try runFile(a, config: &config, cwd: cwd)
         case "repo": output = try runRepo(a, config: &config, cwd: cwd)
         case "url": try runURL(a, config: &config, label: label)
+        case "notes": output = try runNotes(a, config: &config, none: none)
         case "terminal": output = try runTerminal(a, config: &config)
         default: try runProject(command, a, config: &config, name: name, cwd: cwd)
         }
@@ -136,6 +140,15 @@ public enum CLI {
         case "remove": try config.removeURL(a[1], url: a[2])
         default: throw FFError.usage(usage)
         }
+    }
+
+    /// Replaces a project's notes, clears them with --none, or returns them when no text is given.
+    private static func runNotes(_ a: [String], config: inout Config, none: Bool) throws -> String {
+        try expect(none ? a.count == 1 : (1...2).contains(a.count))
+        if none { try config.setNotes(a[0], "") }
+        else if a.count == 2 { try config.setNotes(a[0], a[1]) }
+        else { return config.projects[try config.index(of: a[0])].notes ?? "" }
+        return ""
     }
 
     /// Sets the terminal app, or returns the current one when no value is given.

@@ -43,15 +43,18 @@ public struct Project: Codable, Hashable, Sendable {
     public var repos: [String]
     /// Inactive projects are hidden from the menu and the All Projects window.
     public var active: Bool
+    /// Free-form text notes. Nil when there are none.
+    public var notes: String?
 
     public init(name: String, path: String?, keyFiles: [String] = [], urls: [ProjectURL] = [], repos: [String] = [],
-                active: Bool = true) {
+                active: Bool = true, notes: String? = nil) {
         self.name = name
         self.path = path
         self.keyFiles = keyFiles
         self.urls = urls
         self.repos = repos
         self.active = active
+        self.notes = notes
     }
 
     /// The full path of a stored key file or repo.
@@ -76,6 +79,7 @@ public struct Project: Codable, Hashable, Sendable {
         urls = try c.decodeIfPresent([ProjectURL].self, forKey: .urls) ?? []
         repos = try c.decodeIfPresent([String].self, forKey: .repos) ?? []
         active = try c.decodeIfPresent(Bool.self, forKey: .active) ?? true
+        notes = try c.decodeIfPresent(String.self, forKey: .notes)
     }
 }
 

@@ -110,3 +110,16 @@ private struct Env {
     try env.ff("activate", "P")
     #expect(try env.store.load().projects[0].active)
 }
+
+@Test func notesCommands() throws {
+    let env = try Env()
+    try env.ff("add", "--name", "P")
+    #expect(try env.ff("notes", "p") == "")
+    try env.ff("notes", "P", "Ship it\nFriday")
+    #expect(try env.ff("notes", "P") == "Ship it\nFriday")
+    try env.ff("notes", "P", "--none")
+    #expect(try env.ff("notes", "P") == "")
+    #expect(throws: FFError.usage(CLI.usage)) { try env.ff("notes") }
+    #expect(throws: FFError.usage(CLI.usage)) { try env.ff("notes", "P", "a", "b") }
+    #expect(throws: FFError.usage(CLI.usage)) { try env.ff("notes", "P", "a", "--none") }
+}

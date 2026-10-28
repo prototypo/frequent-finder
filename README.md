@@ -26,6 +26,9 @@ Macs are much better at giving you the tools to manage information overload, or 
   If you hide the menu bar icon, open the app again from Finder or Spotlight to bring it back.
 - Mark a project inactive (Settings → Active, or `ff deactivate`) to hide it from the menu and
   All Projects. Settings lists inactive projects in a collapsible group so you can turn them back on.
+- In Settings, drag files, folders, or web links (from a browser's address bar) onto a project
+  to add them. A folder with a `.git` inside is added as a git repository. Each project has a Notes box
+  for free text at the bottom of its window and its settings; changes are saved as you type.
 - The `ff` command does the same from the command line.
 
 | Menu | Project window |
@@ -66,6 +69,9 @@ usage:
   ff repo find <name>                   add every repository up to 3 levels below the project
   ff url add <name> <url> [--label "Label"]
   ff url remove <name> <url>
+  ff notes <name>                       show the project's notes
+  ff notes <name> "text"                replace the project's notes
+  ff notes <name> --none                remove the project's notes
   ff terminal [terminal|iterm]          show or set the terminal app
   ff help
 
@@ -95,7 +101,7 @@ The app reloads it when it changes.
 ```
 
 `keyFiles` are files or folders: relative to `path` when inside the project, else absolute (shown as `(external)/<name>`). `repos` are stored the same way. `path` may be left out for a project with no folder
-(Settings → Path → Clear); then every item is an absolute path. `label` is optional. `active` is `true` when left out; `false` hides the project from the menu and All Projects. `terminal` is `terminal` or `iterm`.
+(Settings → Path → Clear); then every item is an absolute path. `label` is optional. `notes` is optional free text. `active` is `true` when left out; `false` hides the project from the menu and All Projects. `terminal` is `terminal` or `iterm`.
 
 ## Development
 
