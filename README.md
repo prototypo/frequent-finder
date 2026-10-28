@@ -38,6 +38,10 @@ Macs are much better at giving you the tools to manage information overload, or 
 
 ![The All Projects window: projects on the left, the selected one's details on the right](docs/images/all-projects.png)
 
+| Drag and drop in Settings | Markdown notes |
+| --- | --- |
+| ![Dragging a file onto a project in Settings, with the drop outline showing](docs/images/drag-and-drop.png) | ![The All Projects window with notes shown as Markdown below the project details](docs/images/notes.png) |
+
 ## Build and install
 
 Needs macOS 15 or later and Xcode (or the Swift toolchain).
