@@ -135,7 +135,9 @@ struct SettingsView: View {
     }
 }
 
-/// The settings form for one project: name, folder, key files, repositories, and links.
+/// The settings form for one project: name, folder, key files, repositories, links, and notes.
+/// Dropping a git repository folder adds it as a repository, other files and folders as key files,
+/// and web URLs as links.
 struct ProjectEditor: View {
     let project: Project
     @Binding var selection: String?
@@ -148,6 +150,8 @@ struct ProjectEditor: View {
     @State private var findResult: String?
     /// Index of the link being edited; nil = adding a new one.
     @State private var editing: Int?
+    /// True while something is dragged over the form.
+    @State private var dropTargeted = false
 
     var body: some View {
         Form {
@@ -164,10 +168,18 @@ struct ProjectEditor: View {
             keyFilesSection
             reposSection
             linksSection
+            NotesEditor(project: project)
         }
         .formStyle(.grouped)
         .onAppear { name = project.name }
+        .dropDestination(for: URL.self, action: drop) { dropTargeted = $0 }
+        .overlay {
+            if dropTargeted {
+                RoundedRectangle(cornerRadius: 8).stroke(Color.accentColor, lineWidth: 3).allowsHitTesting(false)
+            }
+        }
     }
+
 
     /// The project's folder path with Choose and Clear buttons.
     private var pathRow: some View {
@@ -306,6 +318,21 @@ struct ProjectEditor: View {
                                 message: "Choose files or folders. ⌘-click to choose several.")
         guard !paths.isEmpty else { return }
         model.update { try $0.addFiles(project.name, paths, cwd: "/") }
+    }
+
+    /// Adds dropped git repository folders as repositories, other files and folders as key files,
+    /// and web URLs as links.
+    private func drop(_ urls: [URL], _: CGPoint) -> Bool {
+        let paths = urls.filter(\.isFileURL).map(\.path)
+        let repos = paths.filter(Git.isRepository(at:))
+        let files = paths.filter { !Git.isRepository(at: $0) }
+        let links = urls.filter { !$0.isFileURL }.map(\.absoluteString)
+        model.update { config in
+            if !repos.isEmpty { try config.addRepos(project.name, repos, cwd: "/") }
+            if !files.isEmpty { try config.addFiles(project.name, files, cwd: "/") }
+            for link in links { try config.setURL(project.name, url: link) }
+        }
+        return model.error == nil
     }
 
     private func saveLink() {
