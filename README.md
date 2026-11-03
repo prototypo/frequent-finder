@@ -17,6 +17,7 @@ Macs are much better at giving you the tools to manage information overload, or 
   ↓N to pull (as of the last `git fetch`).
 - Click a project to open its window: open the folder in Finder, open Terminal or
   iTerm there, see the branch, open key files and links.
+- Dragging a project from OpenPMTools onto the All Projects sidebar adds it.
 - A project can list git repositories (for a folder holding many repos). Each shows its own
   status; the menu sums them up. Settings → Find Repositories adds all repos up to 3 levels down.
 - Open All Projects (in the menu) shows a resizable window with every project on the left and

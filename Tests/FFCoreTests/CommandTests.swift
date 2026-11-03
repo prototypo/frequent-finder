@@ -238,3 +238,19 @@ private func makeRepos(_ root: String, _ paths: [String]) throws {
     #expect(NoteLine("#hashtag") == .text("#hashtag"))
     #expect(NoteLine("") == .text(""))
 }
+
+@Test func addDroppedProject() throws {
+    var c = Config(projects: [Project(name: "Existing", path: nil)])
+    let drag = ProjectDrag(id: UUID(), name: "Breakthrough")
+    #expect(try c.addDropped(drag) == true)
+    #expect(c.projects.last?.id == drag.id && c.projects.last?.name == "Breakthrough" && c.projects.last?.path == nil)
+    #expect(try c.addDropped(drag) == false)                                  // same id again: no change
+    #expect(c.projects.count == 2)
+    #expect(throws: FFError.duplicateName("existing")) { try c.addDropped(ProjectDrag(id: UUID(), name: "existing")) }
+}
+
+@Test func projectDragJSON() throws {
+    let drag = ProjectDrag(id: UUID(uuidString: "6F9619FF-8B86-D011-B42D-00CF4FC964FF")!, name: "B")
+    let back = try JSONDecoder().decode(ProjectDrag.self, from: JSONEncoder().encode(drag))
+    #expect(back == drag)
+}
