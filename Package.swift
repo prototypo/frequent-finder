@@ -4,6 +4,11 @@ import PackageDescription
 let package = Package(
     name: "FrequentFinder",
     platforms: [.macOS(.v15)],
+    products: [
+        .library(name: "FFCore", targets: ["FFCore"]),
+        .executable(name: "ff", targets: ["ff"]),
+        .executable(name: "FrequentFinder", targets: ["FrequentFinder"]),
+    ],
     targets: [
         .target(name: "FFCore"),
         .executableTarget(name: "ff", dependencies: ["FFCore"]),

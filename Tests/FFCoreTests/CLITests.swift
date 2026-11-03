@@ -27,6 +27,13 @@ private struct Env {
     #expect(try env.ff("list", "--json").contains(#""name" : "Root""#))
 }
 
+@Test func addWithID() throws {
+    let env = try Env()
+    try env.ff("add", "--name", "Book", "--id", "6F9619FF-8B86-D011-B42D-00CF4FC964FF")
+    #expect(try env.ff("list", "--json").contains(#""id" : "6F9619FF-8B86-D011-B42D-00CF4FC964FF""#))
+    #expect(throws: FFError.usage(CLI.usage)) { try env.ff("add", "--name", "X", "--id", "nope") }
+}
+
 @Test func usageErrors() throws {
     let env = try Env()
     for args in [[], ["bogus"], ["add"], ["add", "x", "--name"], ["terminal", "kitty"], ["file", "add", "p"], ["url", "zap", "p", "u"]] {

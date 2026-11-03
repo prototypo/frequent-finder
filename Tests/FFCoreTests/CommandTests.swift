@@ -24,7 +24,16 @@ private func fixture() throws -> String {
     let dir = try fixture()
     var c = Config()
     try c.add(path: "proj", cwd: dir)
-    #expect(c.projects == [Project(name: "proj", path: dir + "/proj")])
+    #expect(c.projects == [Project(id: c.projects[0].id, name: "proj", path: dir + "/proj")])
+}
+
+@Test func addWithKnownID() throws {
+    var c = Config()
+    let id = UUID()
+    try c.add(path: nil, name: "Book", id: id, cwd: "/")
+    #expect(c.projects[0].id == id)
+    #expect(c.index(of: id) == 0)
+    #expect(throws: FFError.duplicateID(id.uuidString)) { try c.add(path: nil, name: "Other", id: id, cwd: "/") }
 }
 
 @Test func addRejectsMissingDirectoryAndFiles() throws {
@@ -228,4 +237,20 @@ private func makeRepos(_ root: String, _ paths: [String]) throws {
     #expect(NoteLine("**bold** start") == .text("**bold** start"))
     #expect(NoteLine("#hashtag") == .text("#hashtag"))
     #expect(NoteLine("") == .text(""))
+}
+
+@Test func addDroppedProject() throws {
+    var c = Config(projects: [Project(name: "Existing", path: nil)])
+    let drag = ProjectDrag(id: UUID(), name: "Breakthrough")
+    #expect(try c.addDropped(drag) == true)
+    #expect(c.projects.last?.id == drag.id && c.projects.last?.name == "Breakthrough" && c.projects.last?.path == nil)
+    #expect(try c.addDropped(drag) == false)                                  // same id again: no change
+    #expect(c.projects.count == 2)
+    #expect(throws: FFError.duplicateName("existing")) { try c.addDropped(ProjectDrag(id: UUID(), name: "existing")) }
+}
+
+@Test func projectDragJSON() throws {
+    let drag = ProjectDrag(id: UUID(uuidString: "6F9619FF-8B86-D011-B42D-00CF4FC964FF")!, name: "B")
+    let back = try JSONDecoder().decode(ProjectDrag.self, from: JSONEncoder().encode(drag))
+    #expect(back == drag)
 }

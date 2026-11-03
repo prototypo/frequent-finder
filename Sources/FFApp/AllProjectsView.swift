@@ -24,6 +24,15 @@ struct AllProjectsView: View {
                     .tag(project.name)
                 }
             }
+            .dropDestination(for: ProjectDrag.self) { drags, _ in
+                model.update { c in for d in drags { _ = try c.addDropped(d) } }
+                return true
+            }
+            .safeAreaInset(edge: .bottom) {
+                if let error = model.error {
+                    Text(error).foregroundStyle(.red).padding(8)
+                }
+            }
             .navigationSplitViewColumnWidth(min: 180, ideal: 220)
         } detail: {
             if let selection, model.project(named: selection) != nil {
