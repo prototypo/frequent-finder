@@ -59,8 +59,8 @@ Make sure `~/.local/bin` is on your `PATH`.
 $ ff help
 usage:
   ff list [--json]                      show all projects
-  ff add <path> [--name "Name"]         add a project (name defaults to the folder name)
-  ff add --name "Name"                  add a project with no folder (only repos, files, links)
+  ff add <path> [--name "Name"] [--id UUID]  add a project (name defaults to the folder name)
+  ff add --name "Name" [--id UUID]           add a project with no folder (only repos, files, links)
   ff remove <name>
   ff rename <name> <new-name>
   ff activate <name>                    show the project in the menu again (the default)
@@ -82,6 +82,8 @@ usage:
 
 Config file: ~/.config/frequent-finder/projects.json (override with FF_CONFIG)
 ```
+
+Each project has a fixed `id`, added automatically, so other tools can refer to it after a rename.
 
 Project names are not case-sensitive. Errors exit with code 1, usage errors with code 2.
 

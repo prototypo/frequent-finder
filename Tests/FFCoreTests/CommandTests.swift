@@ -24,7 +24,16 @@ private func fixture() throws -> String {
     let dir = try fixture()
     var c = Config()
     try c.add(path: "proj", cwd: dir)
-    #expect(c.projects == [Project(name: "proj", path: dir + "/proj")])
+    #expect(c.projects == [Project(id: c.projects[0].id, name: "proj", path: dir + "/proj")])
+}
+
+@Test func addWithKnownID() throws {
+    var c = Config()
+    let id = UUID()
+    try c.add(path: nil, name: "Book", id: id, cwd: "/")
+    #expect(c.projects[0].id == id)
+    #expect(c.index(of: id) == 0)
+    #expect(throws: FFError.duplicateID(id.uuidString)) { try c.add(path: nil, name: "Other", id: id, cwd: "/") }
 }
 
 @Test func addRejectsMissingDirectoryAndFiles() throws {

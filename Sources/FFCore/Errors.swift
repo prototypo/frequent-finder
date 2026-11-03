@@ -5,6 +5,7 @@ public enum FFError: Error, Equatable, CustomStringConvertible, LocalizedError {
     case badConfig(String)
     case noSuchProject(String)
     case duplicateName(String)
+    case duplicateID(String)
     case emptyName
     case notADirectory(String)
     case fileNotFound(String)
@@ -20,6 +21,7 @@ public enum FFError: Error, Equatable, CustomStringConvertible, LocalizedError {
         case .badConfig(let detail): "Cannot read config file \(detail). Fix or delete it; it was not changed."
         case .noSuchProject(let name): "No project named '\(name)'."
         case .duplicateName(let name): "A project named '\(name)' already exists."
+        case .duplicateID(let id): "A project with id '\(id)' already exists."
         case .emptyName: "Project name cannot be empty."
         case .notADirectory(let path): "Not a directory: \(path)"
         case .fileNotFound(let path): "File not found: \(path)"

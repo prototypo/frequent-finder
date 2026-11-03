@@ -32,6 +32,8 @@ public struct ProjectURL: Codable, Hashable, Sendable {
 }
 
 public struct Project: Codable, Hashable, Sendable {
+    /// Fixed for the life of the project, so other tools can refer to it after a rename.
+    public let id: UUID
     public var name: String
     /// Absolute path of the project's top-level folder. Nil for a project that is only a set of
     /// repos, files and links; then every item is stored as an absolute path.
@@ -46,8 +48,9 @@ public struct Project: Codable, Hashable, Sendable {
     /// Free-form text notes. Nil when there are none.
     public var notes: String?
 
-    public init(name: String, path: String?, keyFiles: [String] = [], urls: [ProjectURL] = [], repos: [String] = [],
+    public init(id: UUID = UUID(), name: String, path: String?, keyFiles: [String] = [], urls: [ProjectURL] = [], repos: [String] = [],
                 active: Bool = true, notes: String? = nil) {
+        self.id = id
         self.name = name
         self.path = path
         self.keyFiles = keyFiles
@@ -73,6 +76,7 @@ public struct Project: Codable, Hashable, Sendable {
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
         name = try c.decode(String.self, forKey: .name)
         path = try c.decodeIfPresent(String.self, forKey: .path)
         keyFiles = try c.decodeIfPresent([String].self, forKey: .keyFiles) ?? []
@@ -125,11 +129,23 @@ public struct ConfigStore: Sendable {
     /// A missing file is an empty config. A file that cannot be parsed throws `FFError.badConfig`.
     public func load() throws -> Config {
         guard FileManager.default.fileExists(atPath: url.path) else { return Config() }
+        let config: Config
+        let needsIDs: Bool
         do {
-            return try JSONDecoder().decode(Config.self, from: Data(contentsOf: url))
+            let data = try Data(contentsOf: url)
+            config = try JSONDecoder().decode(Config.self, from: data)
+            needsIDs = try JSONDecoder().decode(IDProbe.self, from: data).projects?.contains { $0.id == nil } ?? false
         } catch {
             throw FFError.badConfig("\(url.path): \(error.localizedDescription)")
         }
+        // One-time migration: projects from older files got fresh ids; keep them.
+        if needsIDs { try save(config) }
+        return config
+    }
+
+    private struct IDProbe: Decodable {
+        struct P: Decodable { let id: UUID? }
+        let projects: [P]?
     }
 
     /// Writes atomically: a temp file in the same folder replaces the original.

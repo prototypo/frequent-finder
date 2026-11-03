@@ -42,11 +42,16 @@ extension Config {
     }
 
     /// `path` nil makes a project with no folder; then `name` is required.
-    public mutating func add(path: String?, name: String? = nil, cwd: String) throws {
+    public mutating func add(path: String?, name: String? = nil, id: UUID? = nil, cwd: String) throws {
         let full = try path.map { try Self.directory($0, cwd: cwd) }
         guard let name = name ?? full.map({ ($0 as NSString).lastPathComponent }) else { throw FFError.emptyName }
         try checkName(name)
-        projects.append(Project(name: name, path: full))
+        if let id, index(of: id) != nil { throw FFError.duplicateID(id.uuidString) }
+        projects.append(Project(id: id ?? UUID(), name: name, path: full))
+    }
+
+    public func index(of id: UUID) -> Int? {
+        projects.firstIndex { $0.id == id }
     }
 
     public mutating func remove(_ name: String) throws {

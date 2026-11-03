@@ -4,8 +4,8 @@ public enum CLI {
     public static let usage = """
     usage:
       ff list [--json]                      show all projects
-      ff add <path> [--name "Name"]         add a project (name defaults to the folder name)
-      ff add --name "Name"                  add a project with no folder (only repos, files, links)
+      ff add <path> [--name "Name"] [--id UUID]  add a project (name defaults to the folder name)
+      ff add --name "Name" [--id UUID]           add a project with no folder (only repos, files, links)
       ff remove <name>
       ff rename <name> <new-name>
       ff activate <name>                    show the project in the menu again (the default)
@@ -35,6 +35,11 @@ public enum CLI {
         let none = takeFlag("--none", from: &args)
         let name = try takeOption("--name", from: &args)
         let label = try takeOption("--label", from: &args)
+        let idText = try takeOption("--id", from: &args)
+        let id = try idText.map { text in
+            guard let id = UUID(uuidString: text) else { throw FFError.usage(usage) }
+            return id
+        }
         guard let command = args.first else { throw FFError.usage(usage) }
         let a = Array(args.dropFirst())
         if ["help", "--help", "-h"].contains(command) { return usage }
@@ -51,7 +56,7 @@ public enum CLI {
         case "url": try runURL(a, config: &config, label: label)
         case "notes": output = try runNotes(a, config: &config, none: none)
         case "terminal": output = try runTerminal(a, config: &config)
-        default: try runProject(command, a, config: &config, name: name, cwd: cwd)
+        default: try runProject(command, a, config: &config, name: name, id: id, cwd: cwd)
         }
 
         if config != before { try store.save(config) }
@@ -71,11 +76,11 @@ public enum CLI {
     }
 
     /// Handles add, remove, rename, activate and deactivate; anything else is a usage error.
-    private static func runProject(_ command: String, _ a: [String], config: inout Config, name: String?, cwd: String) throws {
+    private static func runProject(_ command: String, _ a: [String], config: inout Config, name: String?, id: UUID?, cwd: String) throws {
         switch command {
         case "add":
             try expect(a.count == 1 || (a.isEmpty && name != nil))
-            try config.add(path: a.first, name: name, cwd: cwd)
+            try config.add(path: a.first, name: name, id: id, cwd: cwd)
         case "remove":
             try expect(a.count == 1)
             try config.remove(a[0])
