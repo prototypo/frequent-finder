@@ -90,16 +90,20 @@ public struct Project: Codable, Hashable, Sendable {
 public struct Config: Codable, Equatable, Sendable {
     public var terminal: TerminalApp
     public var projects: [Project]
+    /// Apps that get an "Open in" button on every project.
+    public var linkedApps: [LinkedApp]
 
-    public init(terminal: TerminalApp = .terminal, projects: [Project] = []) {
+    public init(terminal: TerminalApp = .terminal, projects: [Project] = [], linkedApps: [LinkedApp] = []) {
         self.terminal = terminal
         self.projects = projects
+        self.linkedApps = linkedApps
     }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         terminal = try c.decodeIfPresent(TerminalApp.self, forKey: .terminal) ?? .terminal
         projects = try c.decodeIfPresent([Project].self, forKey: .projects) ?? []
+        linkedApps = try c.decodeIfPresent([LinkedApp].self, forKey: .linkedApps) ?? []
     }
 
     /// The config as pretty-printed JSON, exactly as saved to disk.
