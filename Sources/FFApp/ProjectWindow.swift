@@ -1,3 +1,4 @@
+import AppKit
 import FFCore
 import SwiftUI
 
@@ -7,12 +8,35 @@ struct ProjectWindow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
 
+    /// Set once a link reached a window SwiftUI made only for it, so that window closes.
+    @State private var linkHandled = false
+
     var body: some View {
-        if let project = model.project(named: name) {
-            details(project)
-        } else {
-            Text("Project '\(name)' not found.").padding().navigationTitle(name)
+        Group {
+            if name.isEmpty {
+                // A window SwiftUI made only to receive a project link; it closes once the link is handled.
+                if linkHandled { WindowCloser() } else { Color.clear.frame(width: 1, height: 1) }
+            } else if let project = model.project(named: name) {
+                details(project)
+            } else {
+                Text("Project '\(name)' not found.").padding().navigationTitle(name)
+            }
         }
+        .onOpenURL(perform: openLink)
+    }
+
+    /// Opens (or brings to the front) the project a `frequentfinder://project/<UUID>` link names.
+    private func openLink(_ url: URL) {
+        if let id = LinkedApp.projectID(in: url, scheme: linkScheme), let p = model.project(id: id) {
+            openWindow(value: p.name)
+        } else {
+            NSApp.activate()
+            let alert = NSAlert()
+            alert.messageText = "No project with this link."
+            alert.informativeText = url.absoluteString
+            alert.runModal()
+        }
+        if name.isEmpty { linkHandled = true }
     }
 
     /// Path, git status, and Finder/terminal buttons for the project's own folder.
@@ -274,6 +298,20 @@ struct LinkRow: View {
             Link(link.title, destination: url)
         } else {
             Text(link.title).foregroundStyle(.secondary)
+        }
+    }
+}
+
+/// Closes the window it is placed in. SwiftUI's dismiss did not always close a window made for a link.
+private struct WindowCloser: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { CloserView() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    final class CloserView: NSView {
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard let window else { return }
+            DispatchQueue.main.async { window.close() }
         }
     }
 }
