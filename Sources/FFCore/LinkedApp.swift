@@ -21,15 +21,18 @@ public struct LinkedApp: Codable, Hashable, Sendable {
             .flatMap { try? PropertyListSerialization.propertyList(from: $0, format: nil) as? [String: Any] }
         let name = plist?["CFBundleDisplayName"] as? String ?? plist?["CFBundleName"] as? String ?? fallback
         let types = plist?["CFBundleURLTypes"] as? [[String: Any]]
+        // The scheme comes from another app, so it must be a valid URL scheme (RFC 3986) before we use it.
         guard let bundleID = plist?["CFBundleIdentifier"] as? String,
-              let scheme = (types?.first?["CFBundleURLSchemes"] as? [String])?.first
+              let scheme = (types?.first?["CFBundleURLSchemes"] as? [String])?.first,
+              scheme.range(of: "^[A-Za-z][A-Za-z0-9+.-]*$", options: .regularExpression) != nil
         else { throw FFError.notLinkable(name) }
         self.init(bundleID: bundleID, name: name, scheme: scheme)
     }
 
-    /// `<scheme>://project/<uuid>`, uuid in lowercase.
-    public func link(to project: UUID) -> URL {
-        URL(string: "\(scheme)://project/\(project.uuidString.lowercased())")!
+    /// `<scheme>://project/<uuid>`, uuid in lowercase. Nil when the stored scheme is not usable
+    /// (only possible if the config was edited by hand).
+    public func link(to project: UUID) -> URL? {
+        URL(string: "\(scheme)://project/\(project.uuidString.lowercased())")
     }
 
     /// The project id in a `<scheme>://project/<UUID>` link; nil for anything else.
@@ -44,7 +47,8 @@ public struct LinkedApp: Codable, Hashable, Sendable {
 
     /// Opens the project in this app, by bundle id, so the link goes here even if another app claims the scheme.
     public func open(_ project: UUID) throws {
-        try Launcher.open("-b", bundleID, link(to: project).absoluteString)
+        guard let link = link(to: project) else { throw FFError.badURL("\(scheme)://project/…") }
+        try Launcher.open("-b", bundleID, link.absoluteString)
     }
 }
 

@@ -32,8 +32,8 @@ private func makeApp(name: String, bundleID: String, schemes: [String]?) throws 
 
 @Test func linkRoundTrips() {
     let id = UUID(), app = LinkedApp(bundleID: "b", name: "B", scheme: "boards")
-    #expect(app.link(to: id).absoluteString == "boards://project/\(id.uuidString.lowercased())")
-    #expect(LinkedApp.projectID(in: app.link(to: id), scheme: "boards") == id)
+    #expect(app.link(to: id)?.absoluteString == "boards://project/\(id.uuidString.lowercased())")
+    #expect(LinkedApp.projectID(in: app.link(to: id)!, scheme: "boards") == id)
     #expect(LinkedApp.projectID(in: URL(string: "boards://project/\(id.uuidString)")!, scheme: "BOARDS") == id)
 }
 
@@ -64,4 +64,17 @@ private func makeApp(name: String, bundleID: String, schemes: [String]?) throws 
     var c = Config()
     c.linkedApps = [LinkedApp(bundleID: "b", name: "B", scheme: "boards")]
     #expect(try JSONDecoder().decode(Config.self, from: c.jsonData()) == c)
+}
+
+@Test func linkedAppRejectsBadScheme() throws {
+    for bad in ["my scheme", "%", "é", "-n", "1abc"] {
+        let url = try makeApp(name: "Odd", bundleID: "org.example.Odd", schemes: [bad])
+        #expect(throws: FFError.notLinkable("Odd"), "\(bad)") { try LinkedApp(appAt: url) }
+    }
+}
+
+@Test func badSchemeFromConfigDoesNotCrash() {
+    let app = LinkedApp(bundleID: "b", name: "B", scheme: "my scheme")
+    #expect(app.link(to: UUID()) == nil)
+    #expect(throws: FFError.badURL("my scheme://project/…")) { try app.open(UUID()) }
 }
