@@ -31,7 +31,7 @@ struct SettingsView: View {
             }
         }
         .padding()
-        .frame(width: 700, height: 560)
+        .frame(width: 700, height: 680)
         .onAppear(perform: addProjectIfRequested)
         .onChange(of: model.pendingAddProject) { addProjectIfRequested() }
         .confirmationDialog(
@@ -68,6 +68,7 @@ struct SettingsView: View {
                     openAtLogin = SMAppService.mainApp.status == .enabled
                 }
             ))
+            LinkedAppsView()
         }
     }
 

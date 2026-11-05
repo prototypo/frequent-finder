@@ -79,6 +79,9 @@ struct ProjectWindow: View {
 
     private func form(_ p: Project) -> some View {
         Form {
+            if model.config.linkedApps.contains(where: { $0.appURL != nil }) {
+                Section { OpenInButtons(project: p.id) }
+            }
             if let path = p.path {
                 folderSection(path)
             }

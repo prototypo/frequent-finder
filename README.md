@@ -31,6 +31,10 @@ Macs are much better at giving you the tools to manage information overload, or 
   to add them. A folder with a `.git` inside is added as a git repository. Each project has Notes
   filling the bottom of its window and its settings. They show basic Markdown (headings, lists,
   bold, italic, code, links); click Edit to type. Changes are saved as you type.
+- Linked Apps (Settings): drop an app from Finder or the Dock, or click Add App…. Every project
+  window then has an "Open in <app>" button. An app can be linked when it opens links of the form
+  `<scheme>://project/<project id>`; its scheme is read from the app. Frequent Finder opens
+  `frequentfinder://project/<project id>` itself, so other apps (and `open` in Terminal) can link to it.
 - The `ff` command does the same from the command line.
 
 | Menu | Project window |
@@ -109,7 +113,7 @@ The app reloads it when it changes.
 ```
 
 `keyFiles` are files or folders: relative to `path` when inside the project, else absolute (shown as `(external)/<name>`). `repos` are stored the same way. `path` may be left out for a project with no folder
-(Settings → Path → Clear); then every item is an absolute path. `label` is optional. `notes` is optional free text. `active` is `true` when left out; `false` hides the project from the menu and All Projects. `terminal` is `terminal` or `iterm`.
+(Settings → Path → Clear); then every item is an absolute path. `label` is optional. `notes` is optional free text. `active` is `true` when left out; `false` hides the project from the menu and All Projects. `terminal` is `terminal` or `iterm`. `linkedApps` (optional) lists linked apps as `{ "bundleID", "name", "scheme" }`.
 
 ## Development
 
