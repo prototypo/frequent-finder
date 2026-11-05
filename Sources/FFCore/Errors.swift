@@ -14,6 +14,8 @@ public enum FFError: Error, Equatable, CustomStringConvertible, LocalizedError {
     case noFolder(String)
     case badURL(String)
     case launchFailed(String)
+    case notLinkable(String)
+    case linkedSelf(String)
 
     public var description: String {
         switch self {
@@ -30,6 +32,8 @@ public enum FFError: Error, Equatable, CustomStringConvertible, LocalizedError {
         case .notARepository(let path): "Not a git repository (no .git inside): \(path)"
         case .badURL(let url): "Not a valid http, https or file URL: \(url)"
         case .launchFailed(let detail): "Could not open: \(detail)"
+        case .notLinkable(let name): "\(name) cannot open project links."
+        case .linkedSelf(let name): "\(name) is this app."
         }
     }
 

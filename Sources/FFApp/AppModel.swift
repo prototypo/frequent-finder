@@ -53,6 +53,8 @@ final class AppModel {
     /// The projects shown in the menu and the All Projects window.
     var activeProjects: [Project] { config.projects.filter(\.active) }
 
+    func project(id: UUID) -> Project? { config.projects.first { $0.id == id } }
+
     func project(named name: String) -> Project? {
         (try? config.index(of: name)).map { config.projects[$0] }
     }

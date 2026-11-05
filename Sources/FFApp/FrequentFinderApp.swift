@@ -2,6 +2,9 @@ import AppKit
 import FFCore
 import SwiftUI
 
+/// Our URL scheme: `frequentfinder://project/<UUID>` opens that project. Declared in scripts/make-app.sh.
+let linkScheme = "frequentfinder"
+
 /// UserDefaults key for the "Show in menu bar" setting.
 let showInMenuBarKey = "showInMenuBar"
 
@@ -25,6 +28,8 @@ struct FrequentFinderApp: App {
         .defaultSize(width: 440, height: 480)
         .defaultLaunchBehavior(.suppressed)
         .restorationBehavior(.disabled)
+        // Project links open here (ProjectWindow.openLink), never in the windows below.
+        .handlesExternalEvents(matching: ["project"])
 
         Window("Frequent Finder", id: "all") {
             AllProjectsView().environment(model)
@@ -34,6 +39,7 @@ struct FrequentFinderApp: App {
         // restoration, so it works whatever the "close windows when quitting" setting is.
         .defaultLaunchBehavior(UserDefaults.standard.bool(forKey: allProjectsOpenKey) ? .presented : .suppressed)
         .restorationBehavior(.disabled)
+        .handlesExternalEvents(matching: [])
 
         Window("Frequent Finder Settings", id: "settings") {
             SettingsView().environment(model)
@@ -42,6 +48,7 @@ struct FrequentFinderApp: App {
         .windowResizability(.contentSize)
         .defaultLaunchBehavior(.suppressed)
         .restorationBehavior(.disabled)
+        .handlesExternalEvents(matching: [])
     }
 }
 
