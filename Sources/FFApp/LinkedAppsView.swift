@@ -60,7 +60,9 @@ struct LinkedAppsView: View {
         model.update { config in
             for url in apps { try config.linkedApps.add(LinkedApp(appAt: url), selfBundleID: Bundle.main.bundleIdentifier) }
         }
-        return model.error == nil
+        guard let message = model.error else { return true }
+        model.flash(message)
+        return false
     }
 }
 
@@ -74,7 +76,7 @@ struct OpenInButtons: View {
         if !apps.isEmpty {
             HStack {
                 ForEach(apps, id: \.bundleID) { app in
-                    Button("Open in \(app.name)") { model.attempt { try app.open(project) } }
+                    Button("Open in \(app.name)") { do { try app.open(project) } catch { model.flash("\(error)") } }
                 }
             }
         }
