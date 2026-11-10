@@ -25,10 +25,17 @@ struct ProjectWindow: View {
         .onOpenURL(perform: openLink)
     }
 
-    /// Opens (or brings to the front) the project a `frequentfinder://project/<UUID>` link names.
+    /// Opens the project a `frequentfinder://project/<UUID>` link names: selected in the All Projects
+    /// window when that window is open, otherwise in its own project window.
     private func openLink(_ url: URL) {
         if let id = LinkedApp.projectID(in: url, scheme: linkScheme), let p = model.project(id: id) {
-            openWindow(value: p.name)
+            if let all = model.allProjectsWindow, all.isVisible {
+                UserDefaults.standard.set(p.name, forKey: "allProjectsSelection")  // AllProjectsView's @AppStorage
+                NSApp.activate()
+                all.makeKeyAndOrderFront(nil)
+            } else {
+                openWindow(value: p.name)
+            }
         } else {
             NSApp.activate()
             let alert = NSAlert()

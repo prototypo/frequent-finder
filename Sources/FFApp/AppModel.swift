@@ -82,6 +82,15 @@ final class AppModel {
         }
     }
 
+    /// Shows a linked-app error for 3 seconds, unless another error replaces it first.
+    func flash(_ message: String) {
+        error = message
+        Task {
+            try? await Task.sleep(for: .seconds(3))
+            if error == message { error = nil }
+        }
+    }
+
     func refreshAllGit() {
         refreshGit(config.projects.flatMap { p in [p.path].compactMap { $0 } + p.repos.map(p.fullPath(of:)) })
     }
