@@ -59,7 +59,7 @@ public enum CLI {
         default: try runProject(command, a, config: &config, name: name, id: id, cwd: cwd)
         }
 
-        if config != before { try store.save(config) }
+        if config != before { try store.save(config, changedFrom: before) }
         return output
     }
 

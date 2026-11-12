@@ -92,6 +92,10 @@ public struct Config: Codable, Equatable, Sendable {
     public var projects: [Project]
     /// Apps that get an "Open in" button on every project.
     public var linkedApps: [LinkedApp]
+    /// Per-field edit stamps for sync. See `Config.stamped`.
+    public var stamps: Stamps = [:]
+    /// Deleted project keys to deletion time, so a sync does not bring them back.
+    public var deleted: Tombstones = [:]
 
     public init(terminal: TerminalApp = .terminal, projects: [Project] = [], linkedApps: [LinkedApp] = []) {
         self.terminal = terminal
@@ -99,11 +103,25 @@ public struct Config: Codable, Equatable, Sendable {
         self.linkedApps = linkedApps
     }
 
+    enum CodingKeys: String, CodingKey { case terminal, projects, linkedApps, stamps, deleted }
+
+    /// Empty `stamps` and `deleted` are left out, so an old file saves as it was.
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(terminal, forKey: .terminal)
+        try c.encode(projects, forKey: .projects)
+        try c.encode(linkedApps, forKey: .linkedApps)
+        if !stamps.isEmpty { try c.encode(stamps, forKey: .stamps) }
+        if !deleted.isEmpty { try c.encode(deleted, forKey: .deleted) }
+    }
+
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         terminal = try c.decodeIfPresent(TerminalApp.self, forKey: .terminal) ?? .terminal
         projects = try c.decodeIfPresent([Project].self, forKey: .projects) ?? []
         linkedApps = try c.decodeIfPresent([LinkedApp].self, forKey: .linkedApps) ?? []
+        stamps = try c.decodeIfPresent(Stamps.self, forKey: .stamps) ?? [:]
+        deleted = try c.decodeIfPresent(Tombstones.self, forKey: .deleted) ?? [:]
     }
 
     /// The config as pretty-printed JSON, exactly as saved to disk.
@@ -116,9 +134,12 @@ public struct Config: Codable, Equatable, Sendable {
 
 public struct ConfigStore: Sendable {
     public let url: URL
+    /// Nil means read the device file at save time.
+    public let device: Device?
 
-    public init(url: URL = ConfigStore.defaultURL) {
+    public init(url: URL = ConfigStore.defaultURL, device: Device? = nil) {
         self.url = url
+        self.device = device
     }
 
     /// `$FF_CONFIG` if set, else `~/.config/frequent-finder/projects.json`.
@@ -158,6 +179,12 @@ public struct ConfigStore: Sendable {
         try config.jsonData().write(to: url, options: .atomic)
     }
 
+    /// Stamps what changed from `before`, then saves.
+    public func save(_ config: Config, changedFrom before: Config) throws {
+        let d = try device ?? Device.load()
+        try save(config.stamped(from: before, by: d, now: Date()))
+    }
+
     /// Re-reads the file, applies `change`, and saves if anything changed. Reading first means
     /// edits made by others since our last read are kept, and a broken file is never overwritten.
     @discardableResult
@@ -165,7 +192,7 @@ public struct ConfigStore: Sendable {
         var config = try load()
         let before = config
         try change(&config)
-        if config != before { try save(config) }
+        if config != before { try save(config, changedFrom: before) }
         return config
     }
 }
