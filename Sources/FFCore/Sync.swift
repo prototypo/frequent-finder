@@ -16,8 +16,8 @@ public struct Device: Codable, Hashable, Sendable {
 
     /// Reads the device file; creates it on first use.
     public static func load(from url: URL = Device.defaultURL) throws -> Device {
-        if let data = try? Data(contentsOf: url) {
-            return try JSONDecoder().decode(Device.self, from: data)
+        if FileManager.default.fileExists(atPath: url.path) {
+            return try JSONDecoder().decode(Device.self, from: Data(contentsOf: url))
         }
         let device = Device(id: UUID().uuidString, name: Host.current().localizedName ?? "Mac")
         try FileManager.default.createDirectory(
@@ -68,21 +68,29 @@ private func maxClock(_ a: Stamp?, _ b: Stamp?) -> [String: Int] {
     (a?.clock ?? [:]).merging(b?.clock ?? [:]) { max($0, $1) }
 }
 
-/// True if side a is the later one: by causality, else larger `at`, else larger `by`.
-private func aWins(_ a: Stamp?, _ b: Stamp?) -> Bool {
-    switch causal(a, b) {
+/// True if side a is the later one: by causality, else larger `at`, else larger `by`,
+/// else the larger value as text, so argument order never changes the result.
+private func aWins<T>(_ a: T, _ sa: Stamp?, _ b: T, _ sb: Stamp?) -> Bool {
+    switch causal(sa, sb) {
     case .aBeforeB: return false
     case .bBeforeA: return true
     case .same, .concurrent:
-        let (x, y) = (a?.at ?? 0, b?.at ?? 0)
-        return x != y ? x > y : (a?.by ?? "") >= (b?.by ?? "")
+        let (x, y) = (sa?.at ?? 0, sb?.at ?? 0)
+        if x != y { return x > y }
+        let (p, q) = (sa?.by ?? "", sb?.by ?? "")
+        if p != q { return p > q }
+        return String(describing: a) >= String(describing: b)
     }
 }
 
+/// Winner's at/by with the max of both clocks; nil only when both stamps are nil.
+private func joined(_ winner: Stamp?, _ sa: Stamp?, _ sb: Stamp?) -> Stamp? {
+    (winner ?? sa ?? sb).map { Stamp(at: $0.at, by: $0.by, clock: maxClock(sa, sb)) }
+}
+
 public func mergeValue<T: Equatable>(_ a: T, _ sa: Stamp?, _ b: T, _ sb: Stamp?) -> (T, Stamp?) {
-    let winner = aWins(sa, sb) ? sa : sb
-    let stamp = winner.map { Stamp(at: $0.at, by: $0.by, clock: maxClock(sa, sb)) }
-    return (aWins(sa, sb) ? a : b, stamp)
+    let w = aWins(a, sa, b, sb)
+    return (w ? a : b, joined(w ? sa : sb, sa, sb))
 }
 
 public enum TextJoin { case notes, title }
@@ -96,19 +104,30 @@ private let dividerFormatter: DateFormatter = {
 }()
 
 public func mergeText(_ a: String?, _ sa: Stamp?, _ b: String?, _ sb: Stamp?, join: TextJoin) -> (String?, Stamp?) {
-    guard let ta = a, let tb = b, ta != tb, causal(sa, sb) == .concurrent, let sa, let sb else {
-        if a == nil { return (b, sb) }
-        if b == nil { return (a, sa) }
+    let order = causal(sa, sb)
+    // `.same` with different texts (e.g. both unstamped) is treated as concurrent: keep both.
+    guard let ta = a, let tb = b, ta != tb, order == .concurrent || order == .same else {
+        if a == nil { return (b, joined(sb, sa, sb)) }
+        if b == nil { return (a, joined(sa, sa, sb)) }
         return mergeValue(a, sa, b, sb)
     }
-    let newer = aWins(sa, sb) ? sa : sb
-    let (old, new) = aWins(sa, sb) ? (tb, ta) : (ta, tb)
+    let w = aWins(ta, sa, tb, sb)
+    let newer = w ? sa : sb
+    let (old, new) = w ? (tb, ta) : (ta, tb)
     let divider: String
     switch join {
     case .title: divider = " / "
     case .notes:
-        let date = dividerFormatter.string(from: Date(timeIntervalSince1970: newer.at))
-        divider = "\n\n— Also edited on \(newer.by), \(date) —\n\n"
+        if let newer {
+            let date = dividerFormatter.string(from: Date(timeIntervalSince1970: newer.at))
+            divider = "\n\n— Also edited on \(newer.by), \(date) —\n\n"
+        } else {
+            divider = "\n\n— Also edited on another Mac —\n\n"
+        }
     }
-    return (old + divider + new, Stamp(at: newer.at, by: newer.by, clock: maxClock(sa, sb)))
+    var clock = maxClock(sa, sb)
+    // Equal clocks cannot order the joined text after its inputs, so add a merge tick;
+    // otherwise merging the result with either input again would join a second time.
+    if order == .same { clock["merge", default: 0] += 1 }
+    return (old + divider + new, Stamp(at: newer?.at ?? 0, by: newer?.by ?? "", clock: clock))
 }

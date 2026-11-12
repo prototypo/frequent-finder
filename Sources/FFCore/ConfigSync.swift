@@ -71,9 +71,11 @@ extension Config {
         }
         for id in kept.keys { out.deleted["project:\(id.uuidString)"] = nil }
 
-        let selfWins: Bool
-        (selfWins, out.stamps["config.order"]) =
-            mergeValue(true, stamps["config.order"], false, other.stamps["config.order"])
+        let mineOrder = projects.map(\.id)
+        let (order, orderStamp) =
+            mergeValue(mineOrder, stamps["config.order"], other.projects.map(\.id), other.stamps["config.order"])
+        out.stamps["config.order"] = orderStamp
+        let selfWins = order == mineOrder
         let (first, second) = selfWins ? (projects, other.projects) : (other.projects, projects)
         var seen = Set<UUID>()
         out.projects = (first + second).compactMap { p in

@@ -194,3 +194,17 @@ private func diverged() -> (Config, Config) {
     #expect(a.merged(with: b) == b.merged(with: a))
     #expect(a.merged(with: b).projects.count == 4)
 }
+
+@Test func unstampedOrderConverges() {
+    let p = project("P"), q = project("Q")
+    let a = Config(projects: [p, q]), b = Config(projects: [q, p])
+    #expect(a.merged(with: b).projects.map(\.id) == b.merged(with: a).projects.map(\.id))
+}
+
+@Test func tombstoneEqualToEditKeepsProject() {
+    let s = start()
+    let a = edit(s, by: dev, at: 10) { $0.projects.removeAll() }
+    let b = edit(s, by: devB, at: 10) { $0.projects[0].notes = "same instant" }
+    #expect(a.merged(with: b).projects.map(\.notes) == ["same instant"])
+    #expect(b.merged(with: a).projects.map(\.notes) == ["same instant"])
+}
