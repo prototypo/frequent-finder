@@ -8,7 +8,7 @@ public struct Device: Codable, Hashable, Sendable {
     /// `$FF_DEVICE` if set, else `~/.config/frequent-finder/device.json`.
     public static var defaultURL: URL {
         if let p = ProcessInfo.processInfo.environment["FF_DEVICE"], !p.isEmpty {
-            return URL(fileURLWithPath: p)
+            return URL(fileURLWithPath: (p as NSString).expandingTildeInPath)
         }
         return FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".config/frequent-finder/device.json")
@@ -102,7 +102,7 @@ public enum TextJoin { case notes, title }
 private let dividerFormatter: DateFormatter = {
     let f = DateFormatter()
     f.locale = Locale(identifier: "en_US_POSIX")
-    f.timeZone = .current
+    f.timeZone = TimeZone(identifier: "UTC")
     f.dateFormat = "yyyy-MM-dd HH:mm"
     return f
 }()
@@ -126,7 +126,7 @@ public func mergeText(_ a: String?, _ sa: Stamp?, _ b: String?, _ sb: Stamp?, jo
     case .notes:
         if let newer {
             let date = dividerFormatter.string(from: Date(timeIntervalSince1970: newer.at))
-            divider = "\n\n— Also edited on \(newer.by), \(date) —\n\n"
+            divider = "\n\n— Also edited on \(newer.by), \(date) UTC —\n\n"
         } else {
             divider = "\n\n— Also edited on another Mac —\n\n"
         }

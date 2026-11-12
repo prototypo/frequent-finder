@@ -16,6 +16,13 @@ private func stamp(_ at: Double, _ by: String, _ clock: [String: Int]) -> Stamp 
     #expect(FileManager.default.fileExists(atPath: url.path))
 }
 
+@Test func deviceURLExpandsTilde() {
+    // The default path, so a test running alongside that loads the device file is not redirected.
+    setenv("FF_DEVICE", "~/.config/frequent-finder/device.json", 1)
+    defer { unsetenv("FF_DEVICE") }
+    #expect(Device.defaultURL.path == NSHomeDirectory() + "/.config/frequent-finder/device.json")
+}
+
 @Test func causalOrder() {
     let s1 = Stamp.first(by: devA, now: Date(timeIntervalSince1970: 1))
     let s2 = s1.bumped(by: devA, now: Date(timeIntervalSince1970: 2))
@@ -46,11 +53,7 @@ private func stamp(_ at: Double, _ by: String, _ clock: [String: Int]) -> Stamp 
 
 @Test func concurrentNotesKeepBoth() {
     let a = stamp(5, "Mac", ["A": 1]), b = stamp(6, "iPhone", ["B": 1])
-    let f = DateFormatter()
-    f.locale = Locale(identifier: "en_US_POSIX")
-    f.timeZone = .current
-    f.dateFormat = "yyyy-MM-dd HH:mm"
-    let expected = "x\n\n— Also edited on iPhone, \(f.string(from: Date(timeIntervalSince1970: 6))) —\n\ny"
+    let expected = "x\n\n— Also edited on iPhone, 1970-01-01 00:00 UTC —\n\ny"
     let r1 = mergeText("x", a, "y", b, join: .notes)
     let r2 = mergeText("y", b, "x", a, join: .notes)
     #expect(r1.0 == expected)
