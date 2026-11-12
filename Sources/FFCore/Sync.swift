@@ -35,6 +35,10 @@ public struct Stamp: Codable, Hashable, Sendable {
     public var by: String
     public var clock: [String: Int]
 
+    public init(at: Double, by: String, clock: [String: Int]) {
+        self.at = at; self.by = by; self.clock = clock
+    }
+
     public func bumped(by device: Device, now: Date) -> Stamp {
         var c = clock
         c[device.id, default: 0] += 1
