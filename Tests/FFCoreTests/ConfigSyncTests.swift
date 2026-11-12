@@ -208,3 +208,15 @@ private func diverged() -> (Config, Config) {
     #expect(a.merged(with: b).projects.map(\.notes) == ["same instant"])
     #expect(b.merged(with: a).projects.map(\.notes) == ["same instant"])
 }
+
+@Test func recreatedProjectClearsTombstone() {
+    let p = project()
+    let c0 = Config(projects: [p]).stamped(from: Config(), by: dev, now: now)
+    let c1 = Config().stamped(from: c0, by: dev, now: now)
+    var c2 = c1
+    c2.projects = [p]
+    c2 = c2.stamped(from: c1, by: dev, now: now + 1)
+    #expect(c2.deleted.isEmpty)
+    let later = c2.stamped(from: c2, by: dev, now: now + 91 * 86400)
+    #expect(later.stamps["project:\(p.id.uuidString).name"] != nil)
+}

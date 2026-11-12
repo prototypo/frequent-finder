@@ -24,6 +24,8 @@ extension Config {
             out.deleted[k] = now.timeIntervalSince1970
             out.stamps = out.stamps.filter { !$0.key.hasPrefix(k + ".") }
         }
+        // A re-created project must not keep its old tombstone, or pruning would strip its live stamps.
+        for id in ids { out.deleted["project:\(id.uuidString)"] = nil }
         let cutoff = now.timeIntervalSince1970 - 90 * 86400
         for (k, t) in out.deleted where t < cutoff {
             out.deleted[k] = nil
