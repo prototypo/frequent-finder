@@ -117,3 +117,25 @@ private func stamp(_ at: Double, _ by: String, _ clock: [String: Int]) -> Stamp 
     #expect(throws: (any Error).self) { try Device.load(from: url) }
     #expect(try Data(contentsOf: url) == Data("not json".utf8))
 }
+
+@Test func causallyLaterClearSticks() {
+    let s = stamp(5, "Mac", ["A": 1])
+    let cleared = stamp(6, "iPhone", ["A": 1, "B": 1])
+    #expect(mergeText(nil, cleared, "x", s, join: .notes) == (nil, cleared))
+    #expect(mergeText("x", s, nil, cleared, join: .notes) == (nil, cleared))
+}
+
+@Test func concurrentClearKeepsText() {
+    let a = stamp(6, "Mac", ["A": 1]), b = stamp(5, "iPhone", ["B": 1])
+    #expect(mergeText(nil, a, "x", b, join: .notes).0 == "x")
+    #expect(mergeText("x", b, nil, a, join: .notes).0 == "x")
+}
+
+@Test func clearedThenMergedAgainStaysCleared() {
+    let s = stamp(5, "Mac", ["A": 1])
+    let cleared = stamp(6, "iPhone", ["A": 1, "B": 1])
+    let m = mergeText(nil, cleared, "x", s, join: .notes)
+    #expect(mergeText(m.0, m.1, "x", s, join: .notes).0 == nil)
+    #expect(mergeText("x", s, m.0, m.1, join: .notes).0 == nil)
+    #expect(mergeText(m.0, m.1, nil, cleared, join: .notes).0 == nil)
+}

@@ -107,8 +107,10 @@ public func mergeText(_ a: String?, _ sa: Stamp?, _ b: String?, _ sb: Stamp?, jo
     let order = causal(sa, sb)
     // `.same` with different texts (e.g. both unstamped) is treated as concurrent: keep both.
     guard let ta = a, let tb = b, ta != tb, order == .concurrent || order == .same else {
-        if a == nil { return (b, joined(sb, sa, sb)) }
-        if b == nil { return (a, joined(sa, sa, sb)) }
+        // A clear that is causally later wins (mergeValue below); one that is concurrent keeps the text.
+        if (a == nil) != (b == nil), order == .concurrent || order == .same {
+            return a == nil ? (b, joined(sb, sa, sb)) : (a, joined(sa, sa, sb))
+        }
         return mergeValue(a, sa, b, sb)
     }
     let w = aWins(ta, sa, tb, sb)
