@@ -58,6 +58,8 @@ scripts/make-app.sh --install  # also copies the app to /Applications
 
 Make sure `~/.local/bin` is on your `PATH`.
 
+`~/.config/frequent-finder/device.json` names this Mac for sync. It is created on first save. Do not copy it to another Mac.
+
 ## Command line
 
 ```
