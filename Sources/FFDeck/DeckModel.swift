@@ -28,6 +28,8 @@ final class DeckModel {
     /// Pictures from the AI's vault, by card name.
     private(set) var art: [String: CGImage] = [:]
     var error: String?
+    /// The id of a heading the middle card must scroll to; the card sets it back to nil.
+    var anchor: String?
     @ObservationIgnored var hide: () -> Void = {}
     @ObservationIgnored let vaults = Vaults.standard
     @ObservationIgnored private var artStamps: [String: String] = [:]
@@ -135,6 +137,11 @@ final class DeckModel {
 
     /// A link inside a card's text.
     func openLink(_ url: URL) {
+        // "#id" is a heading on this card, not something to open.
+        if url.scheme == nil, let id = url.fragment {
+            anchor = id
+            return
+        }
         open { try Launcher.open(url.absoluteString) }
     }
 

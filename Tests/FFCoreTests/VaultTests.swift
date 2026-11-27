@@ -82,7 +82,7 @@ private func tempVaults() throws -> Vaults {
         .image(alt: "Screen one.png", target: "shots/Screen one.png", indent: 0),
         .text("![[Some note]]"),
         .text(""),
-        .table(header: ["Name", "Link | more"], rows: [["**a**", "[x](https://x.example)"], ["b"]]),
+        .table(header: ["Name", "Link | more"], align: [.left, .right], rows: [["**a**", "[x](https://x.example)"], ["b"]]),
         .text("after the table"),
         .text(""),
         .quote("quoted"),
@@ -219,4 +219,67 @@ private func tempVaults() throws -> Vaults {
 @Test func stableHashIsFNV1a() {
     #expect(stableHash("") == 0xcbf2_9ce4_8422_2325)
     #expect(stableHash("a") == 0xaf63_dc4c_8601_ec8c)
+}
+
+@Test func extendedBlocksAreRead() {
+    let note = ProjectNote(markdown: """
+        ## Notes
+        ### My Great Heading {#custom-id}
+        - [Go to the heading](#custom-id)
+        | L | C | R |
+        | :--- | :----: | ---: |
+        | a | b | c |
+        ~~~json
+        ## not a heading
+        ```
+        ~~~
+        Water,[^1] and more.[^bignote]
+
+        [^1]: The first footnote.
+        [^bignote]: The second.
+
+        First Term
+        : The definition.
+
+        Second Term
+        : One definition.
+        : Another definition.
+        ## After
+        text
+        """)
+    #expect(note.sections.map(\.title) == ["Notes", "After"])
+    #expect(note.sections[0].lines == [
+        .heading(level: 3, text: "My Great Heading", id: "custom-id"),
+        .item(marker: "•", text: "[Go to the heading](#custom-id)", indent: 0),
+        .table(header: ["L", "C", "R"], align: [.left, .center, .right], rows: [["a", "b", "c"]]),
+        .code("## not a heading"),
+        .code("```"),
+        .text("Water,[^1] and more.[^bignote]"),
+        .text(""),
+        .footnote(id: "1", text: "The first footnote."),
+        .footnote(id: "bignote", text: "The second."),
+        .text(""),
+        .term("First Term"),
+        .definition("The definition."),
+        .text(""),
+        .term("Second Term"),
+        .definition("One definition."),
+        .definition("Another definition."),
+    ])
+}
+
+@Test func extendedInlineBecomesAttributes() {
+    let inline = ExtendedMarkdown.inline
+    #expect(inline("these ==very **important** words==.") == "these ^[very **important** words](ff: 'mark').")
+    #expect(inline("H~2~O and X^2^") == "H^[2](ff: 'sub')O and X^[2](ff: 'sup')")
+    #expect(inline("<mark>a</mark> H<sub>2</sub>O X<sup>2</sup>") == "^[a](ff: 'mark') H^[2](ff: 'sub')O X^[2](ff: 'sup')")
+    #expect(inline("==a ^2^==") == "^[a ^[2](ff: 'sup')](ff: 'mark')")
+    #expect(inline("A footnote,[^1] and one more.[^big]") == "A footnote,^[1](ff: 'sup') and one more.^[big](ff: 'sup')")
+    #expect(inline("Gone camping! :tent: So funny! :joy: :+1:") == "Gone camping! ⛺ So funny! 😂 👍")
+    #expect(inline(":heavy_black_heart: :warning:") == "❤\u{FE0F} ⚠️")
+    // These stay as written: strike-through, code, link targets, web addresses, escapes, unknown codes, times.
+    for same in ["~~flat~~ round", "`H~2~O ==x== :tent:`", "[a](https://x.example/~u/==b==)", "https://x.example/~u~/a^b^",
+                 "\\~not~ \\==so==", "at 10:30:45 :not_an_emoji: a == b", "about ~5 and ~6", "2 ^ 3 ^ 4"] {
+        #expect(inline(same) == same)
+    }
 }

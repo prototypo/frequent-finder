@@ -108,6 +108,9 @@ public enum VaultSetup {
         - A list item with one link is something to open. All other Markdown is shown as written,
           in the same order: nested lists, headings from `###` down, bold, links in text, quotes, code,
           tables, and pictures (`![alt](address)` or `![[file.png]]`) on a line of their own.
+        - Extended Markdown works too: `==highlight==`, `H~2~O`, `X^2^`, `~~strike~~`, `:emoji:` codes,
+          footnotes (`[^1]` in the text, `[^1]: the note` on a line), definition lists (a term, then
+          `: definition` lines), `~~~` code fences, and `### Heading {#id}` with links to `#id`.
         - A link target is a web address, a `file://` address, an absolute or `~/` path, or a `[[note]]`.
           In a target, write a space as `%20` and round brackets as `%28` and `%29`, or put the target in `<...>`.
         - A folder with `.git` in it is shown as a git repository.
