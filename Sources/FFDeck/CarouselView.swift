@@ -165,6 +165,11 @@ struct DetailView: View {
                 .onChange(of: model.row) { _, row in
                     if isHero { withAnimation(glide) { proxy.scrollTo("row \(row)") } }
                 }
+                .onChange(of: model.anchor) { _, id in
+                    guard isHero, let id else { return }
+                    withAnimation(glide) { proxy.scrollTo("#\(id)", anchor: .top) }
+                    model.anchor = nil
+                }
             }
             Text("← → project     ↑ ↓ choose     ⏎ open     E edit     esc hide")
                 .font(.system(size: 14))
@@ -203,8 +208,10 @@ struct LineView: View {
             }
             .padding(.leading, 12 + CGFloat(indent) * 24)
             .padding(.vertical, 3)
-        case .heading(let level, let text):
-            Text(inline(text)).font(.system(size: level <= 3 ? 21 : 18, weight: .semibold)).padding(.top, 8)
+        case .heading(let level, let text, let id):
+            let heading = Text(inline(text)).font(.system(size: level <= 3 ? 21 : 18, weight: .semibold)).padding(.top, 8)
+            // A link to "#id" in the note's text goes here.
+            if let id { heading.id("#\(id)") } else { heading }
         case .quote(let text):
             Text(inline(text)).italic().opacity(0.85).padding(.leading, 14).overlay(alignment: .leading) {
                 Rectangle().frame(width: 3).opacity(0.4)
@@ -213,10 +220,15 @@ struct LineView: View {
             Text(text.isEmpty ? " " : text).font(.system(size: 15, design: .monospaced)).opacity(0.9)
         case .rule:
             Divider().padding(.vertical, 6)
-        case .table(let header, let rows):
+        case .table(let header, let align, let rows):
             Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 7) {
                 GridRow {
-                    ForEach(header.indices, id: \.self) { Text(inline(header[$0])).fontWeight(.semibold) }
+                    ForEach(header.indices, id: \.self) { column in
+                        let side = column < align.count ? align[column] : .left
+                        Text(inline(header[column]))
+                            .fontWeight(.semibold)
+                            .gridColumnAlignment(side == .center ? .center : side == .right ? .trailing : .leading)
+                    }
                 }
                 Divider().gridCellUnsizedAxes(.horizontal)
                 ForEach(rows.indices, id: \.self) { row in
@@ -230,19 +242,59 @@ struct LineView: View {
             .padding(.vertical, 6)
         case .image(let alt, let target, let indent):
             PictureView(alt: alt, target: target, vault: vault).padding(.leading, CGFloat(indent) * 24).padding(.vertical, 4)
+        case .term(let text):
+            Text(inline(text)).fontWeight(.semibold).padding(.top, 4)
+        case .definition(let text):
+            Text(inline(text)).font(.system(size: 18)).padding(.leading, 24)
+        case .footnote(let id, let text):
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(id).font(.system(size: 12)).baselineOffset(5)
+                Text(inline(text))
+            }
+            .font(.system(size: 15))
+            .opacity(0.85)
         case .text(let text):
             Text(inline(text.isEmpty ? " " : text)).font(.system(size: text.isEmpty ? 8 : 18))
         }
     }
 
-    /// Bold, italic, code, strike-through and links; `[[Note]]` becomes a link into Obsidian.
-    /// The text unchanged if it is not valid Markdown.
+    /// Bold, italic, code, strike-through, links, highlight, subscript, superscript and emoji short codes;
+    /// `[[Note]]` becomes a link into Obsidian. The text unchanged if it is not valid Markdown.
     private func inline(_ text: String) -> AttributedString {
         let linked = text.replacing(#/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]*))?\]\]/#) { match in
             "[\(match.2 ?? match.1)](<\(Vaults.obsidianURL(vault: vault, file: String(match.1)))>)"
         }
-        return (try? AttributedString(markdown: linked, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+        let options = AttributedString.MarkdownParsingOptions(allowsExtendedAttributes: true, interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        guard var styled = try? AttributedString(markdown: ExtendedMarkdown.inline(linked), including: \.deck, options: options) else {
+            return AttributedString(text)
+        }
+        for run in styled.runs {
+            let style = run[ExtendedStyle.self]
+            if style == "mark" { styled[run.range].swiftUI.backgroundColor = .yellow.opacity(0.4) }
+            if style == "sub" || style == "sup" {
+                // ponytail: one size for every text size; scale from the line's own size if it looks wrong in headings.
+                styled[run.range].swiftUI.font = .system(size: 12)
+                styled[run.range].swiftUI.baselineOffset = style == "sub" ? -4 : 7
+            }
+        }
+        return styled
     }
+}
+
+/// What `ExtendedMarkdown.inline` marks a piece of text with: "mark", "sub" or "sup".
+enum ExtendedStyle: CodableAttributedStringKey, MarkdownDecodableAttributedStringKey {
+    typealias Value = String
+    static let name = "ff"
+}
+
+extension AttributeScopes {
+    struct DeckAttributes: AttributeScope {
+        let ff: ExtendedStyle
+        let foundation: FoundationAttributes
+        let swiftUI: SwiftUIAttributes
+    }
+
+    var deck: DeckAttributes.Type { DeckAttributes.self }
 }
 
 /// A picture from a note. It loads when its card comes near the middle.

@@ -114,11 +114,12 @@ public struct Resource: Hashable, Sendable {
     }
 
     /// A list item that is one link: `[label](target)`, `[[Note]]`, `[[Note|label]]`, or a bare web address.
-    /// Text around the link stays in the label. Nil for an item with no link, with several links, or with a picture.
+    /// Text around the link stays in the label. Nil for an item with no link, with several links, with a picture,
+    /// or with a link to a heading on the same card (`#id`).
     init?(item: String) {
         let links = item.matches(of: #/\[([^\]]*)\]\((<[^>]*>|[^)\s]*)\)/#)
         let notes = item.matches(of: #/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]*))?\]\]/#)
-        if links.count == 1, notes.isEmpty, let m = links.first, !item[..<m.range.lowerBound].hasSuffix("!") {
+        if links.count == 1, notes.isEmpty, let m = links.first, !item[..<m.range.lowerBound].hasSuffix("!"), !m.2.hasPrefix("#") {
             self.init(label: item.replacingCharacters(in: m.range, with: m.1), target: String(m.2))
         } else if notes.count == 1, links.isEmpty, let m = notes.first, !item[..<m.range.lowerBound].hasSuffix("!") {
             self.init(label: item.replacingCharacters(in: m.range, with: m.2 ?? m.1), target: String(m.1))
@@ -139,18 +140,26 @@ public struct NoteSection: Equatable, Sendable {
         case resource(Resource, indent: Int)
         /// Any other list item: its marker ("•", "1.", "☐" or "☑") and its Markdown text.
         case item(marker: String, text: String, indent: Int)
-        case heading(level: Int, text: String)
+        /// `id` is from `### Heading {#id}`; a link to `#id` goes to the heading.
+        case heading(level: Int, text: String, id: String? = nil)
         case quote(String)
-        /// A line inside a ``` fence, kept as written.
+        /// A line inside a ``` or ~~~ fence, kept as written.
         case code(String)
         case rule
-        /// A table. Every cell is Markdown text.
-        case table(header: [String], rows: [[String]])
+        /// A table. Every cell is Markdown text. `align` has one entry per column of the line of dashes.
+        case table(header: [String], align: [Align] = [], rows: [[String]])
+        /// A line with `: definition` lines after it.
+        case term(String)
+        case definition(String)
+        /// `[^id]: text`, the note for the mark `[^id]` in the text.
+        case footnote(id: String, text: String)
         /// A picture on a line or in a list item of its own. See `Vaults.pictureURL` for the target.
         case image(alt: String, target: String, indent: Int)
         /// A line of Markdown text. Empty for a blank line between paragraphs.
         case text(String)
     }
+
+    public enum Align: Sendable { case left, center, right }
 
     public var title: String
     public var lines: [Line]
@@ -169,17 +178,14 @@ public struct NoteSection: Equatable, Sendable {
     static func parse(_ raw: [String]) -> [Line] {
         var lines: [Line] = []
         var levels: [Int] = []
-        var inCode = false
+        var fence: String?
         var next = 0
         while next < raw.count {
             let line = raw[next]
             next += 1
             let body = line.drop { $0 == " " || $0 == "\t" }
-            if body.hasPrefix("```") {
-                inCode.toggle()
-                continue
-            }
-            if inCode {
+            if isFence(line, &fence) { continue }
+            if fence != nil {
                 lines.append(.code(line))
                 continue
             }
@@ -200,22 +206,31 @@ public struct NoteSection: Equatable, Sendable {
                 }
             case .heading(let level, let text):
                 levels = []
-                lines.append(.heading(level: level, text: text))
+                let id = text.firstMatch(of: #/\s*\{#([^}\s]+)\}\s*$/#)
+                lines.append(.heading(level: level, text: id.map { String(text[..<$0.range.lowerBound]) } ?? text, id: id.map { String($0.1) }))
             case .text(let text):
                 if text.isEmpty {
                     if lines.last != .text("") { lines.append(.text("")) }
                     continue
                 }
                 levels = []
-                if text.contains("|"), next < raw.count, raw[next].wholeMatch(of: #/\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*/#) != nil {
+                if let note = text.wholeMatch(of: #/\[\^([^\]\s]+)\]:\s*(.*)/#) {
+                    lines.append(.footnote(id: String(note.1), text: String(note.2)))
+                } else if text.hasPrefix(": ") {
+                    // A definition: the line of text before it is its term.
+                    if case .text(let term) = lines.last, !term.isEmpty { lines[lines.count - 1] = .term(term) }
+                    lines.append(.definition(text.dropFirst(2).trimmingCharacters(in: .whitespaces)))
+                } else if text.contains("|"), next < raw.count, raw[next].wholeMatch(of: #/\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*/#) != nil {
                     // A table: this line is its header, the next its line of dashes, then rows while lines have "|".
+                    // A colon at an end of the dashes puts the column on that side; at both ends, in the middle.
+                    let align: [Align] = cells(raw[next]).map { $0.hasSuffix(":") ? ($0.hasPrefix(":") ? .center : .right) : .left }
                     next += 1
                     var rows: [[String]] = []
                     while next < raw.count, raw[next].contains("|") {
                         rows.append(cells(raw[next]))
                         next += 1
                     }
-                    lines.append(.table(header: cells(text), rows: rows))
+                    lines.append(.table(header: cells(text), align: align, rows: rows))
                 } else if let picture = picture(text) {
                     lines.append(.image(alt: picture.alt, target: picture.target, indent: 0))
                 } else if text.hasPrefix(">") {
@@ -254,6 +269,17 @@ public struct NoteSection: Equatable, Sendable {
     }
 }
 
+/// True when `line` opens or closes a code block. `fence` is the open block's marker: ``` or ~~~.
+func isFence(_ line: String, _ fence: inout String?) -> Bool {
+    let body = line.drop { $0 == " " || $0 == "\t" }
+    if let open = fence {
+        if body.hasPrefix(open) { fence = nil }
+        return fence == nil
+    }
+    fence = ["```", "~~~"].first { body.hasPrefix($0) }
+    return fence != nil
+}
+
 /// A project note: flat `key: value` properties between `---` lines, then sections.
 public struct ProjectNote: Equatable, Sendable {
     public var properties: [String: String] = [:]
@@ -274,10 +300,9 @@ public struct ProjectNote: Equatable, Sendable {
             lines = lines[(end + 1)...]
         }
         var raw: [(title: String, lines: [String])] = [("", [])]
-        var inCode = false
+        var fence: String?
         for line in lines {
-            if line.drop(while: { $0 == " " || $0 == "\t" }).hasPrefix("```") { inCode.toggle() }
-            if line.hasPrefix("## "), !inCode {
+            if !isFence(line, &fence), fence == nil, line.hasPrefix("## ") {
                 raw.append((line.dropFirst(3).trimmingCharacters(in: .whitespaces), []))
             } else {
                 raw[raw.count - 1].lines.append(line)
