@@ -104,6 +104,8 @@ public enum VaultSetup {
           - `order`: a number. Cards sort by it, then by name.
           - `icon`: an SF Symbol name for the card art.
           - `path`: the project folder.
+          - `id`: the project's id in the old project list. The card finds its Kanban board in OpenPMTools by it.
+            A note without it is found by its name, so a renamed note needs it.
         - Every `## Heading` is a group on the card. Use any headings.
         - A list item with one link is something to open. All other Markdown is shown as written,
           in the same order: nested lists, headings from `###` down, bold, links in text, quotes, code,
@@ -180,7 +182,7 @@ public enum VaultSetup {
 extension Project {
     /// The project as a vault note. `order` is its place in the old project list.
     public func noteMarkdown(order: Int) -> String {
-        var lines = ["---", "type: project", "status: \(active ? "active" : "paused")", "order: \(order)"]
+        var lines = ["---", "type: project", "id: \(id.uuidString)", "status: \(active ? "active" : "paused")", "order: \(order)"]
         if let path { lines.append("path: \(VaultSetup.tilde(path))") }
         lines.append("---")
         func group(_ title: String, _ items: [(label: String, target: String)]) {

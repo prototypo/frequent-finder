@@ -27,6 +27,8 @@ final class DeckModel {
     private(set) var git: [String: GitStatus] = [:]
     /// Pictures from the AI's vault, by card name.
     private(set) var art: [String: CGImage] = [:]
+    /// The link to the Kanban board, by card name, for the cards that have a board.
+    private(set) var boards: [String: String] = [:]
     var error: String?
     /// The id of a heading the middle card must scroll to; the card sets it back to nil.
     var anchor: String?
@@ -37,11 +39,14 @@ final class DeckModel {
     var count: Int { cards.count + 1 }
     var card: ProjectCard? { cards.indices.contains(index - 1) ? cards[index - 1] : nil }
 
-    /// A card's sections: its folder, then the owner's note, then the AI's. True marks the AI's.
+    /// A card's sections: its folder and Kanban board, then the owner's note, then the AI's. True marks the AI's.
     private func sections(of card: ProjectCard?) -> [(NoteSection, Bool)] {
         guard let card else { return [] }
-        let folder = card.property("path").map { [(NoteSection(title: "Project", lines: [.resource(Resource(label: "Project folder", target: $0), indent: 0)]), false)] }
-        return (folder ?? []) + (card.human?.sections ?? []).map { ($0, false) } + (card.claude?.sections ?? []).map { ($0, true) }
+        let project = [card.property("path").map { Resource(label: "Project folder", target: $0) },
+                       boards[card.name].map { Resource(label: "Kanban board", target: $0) }]
+            .compactMap { $0 }.map { NoteSection.Line.resource($0, indent: 0) }
+        return (project.isEmpty ? [] : [(NoteSection(title: "Project", lines: project), false)])
+            + (card.human?.sections ?? []).map { ($0, false) } + (card.claude?.sections ?? []).map { ($0, true) }
     }
 
     func groups(of card: ProjectCard?) -> [CardGroup] {
@@ -75,10 +80,15 @@ final class DeckModel {
     func reload() {
         let vaults = vaults
         Task {
-            let new = await Task.detached { vaults.loadCards() }.value
-            if new != cards {
+            let (new, links) = await Task.detached {
+                let cards = vaults.loadCards()
+                // A broken or missing project list only means no card finds its board by name.
+                return (cards, Kanban.links(for: cards, config: (try? ConfigStore().load()) ?? Config(), boards: Kanban.boardProjects()))
+            }.value
+            if new != cards || links != boards {
                 let name = card?.name
                 cards = new
+                boards = links
                 if let name, let i = new.firstIndex(where: { $0.name == name }) {
                     index = i + 1
                 } else {

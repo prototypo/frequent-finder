@@ -131,6 +131,7 @@ private func tempVaults() throws -> Vaults {
 
     #expect(note.properties["status"] == "paused")
     #expect(note.properties["order"] == "4")
+    #expect(note.properties["id"] == project.id.uuidString)
     #expect(Resource(label: "", target: note.properties["path"]!).location == dir)
     #expect(note.sections.map(\.title) == ["Files", "Repos", "Links", "Notes"])
     #expect(note.sections[0].resources.map(\.location) == [dir + "/docs/Plan (v2).md", "/etc/hosts"])
@@ -282,4 +283,27 @@ private func tempVaults() throws -> Vaults {
                  "\\~not~ \\==so==", "at 10:30:45 :not_an_emoji: a == b", "about ~5 and ~6", "2 ^ 3 ^ 4"] {
         #expect(inline(same) == same)
     }
+}
+
+@Test func cardsWithABoardGetItsLink() throws {
+    let dir = try makeTempDir()
+    let byName = Project(name: "By: Name", path: nil), renamed = Project(name: "Old name", path: nil), noBoard = Project(name: "No board", path: nil)
+    try write("""
+        {"boards": [{"project": "\(byName.id.uuidString)", "columns": []}, {"project": "\(renamed.id.uuidString.lowercased())"}], "ownProjects": []}
+        """, dir + "/boards.json")
+    let boards = Kanban.boardProjects(at: URL(fileURLWithPath: dir + "/boards.json"))
+    #expect(boards == [byName.id, renamed.id])
+    #expect(Kanban.boardProjects(at: URL(fileURLWithPath: dir + "/none.json")).isEmpty)
+
+    let cards = [
+        ProjectCard(name: "by- name"),
+        ProjectCard(name: "New name", human: ProjectNote(markdown: "---\nid: \(renamed.id.uuidString)\n---\n")),
+        ProjectCard(name: "No board"),
+        ProjectCard(name: "Not in the list"),
+    ]
+    #expect(Kanban.links(for: cards, config: Config(projects: [byName, renamed, noBoard]), boards: boards) == [
+        "by- name": "openpmtools://project/\(byName.id.uuidString.lowercased())",
+        "New name": "openpmtools://project/\(renamed.id.uuidString.lowercased())",
+    ])
+    #expect(Resource(label: "Kanban board", target: "openpmtools://project/x").kind == .other)
 }
